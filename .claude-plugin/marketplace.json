@@ -1,0 +1,14 @@
+{
+  "name": "slack-message-formatter",
+  "description": "Slack message formatting plugin for Claude Code",
+  "owner": {
+    "name": "Karan Bansal"
+  },
+  "plugins": [
+    {
+      "name": "slack-message-formatter",
+      "description": "Format messages for Slack. Converts Markdown to rich HTML for copy-paste or Slack mrkdwn for API/webhook.",
+      "source": "./"
+    }
+  ]
+}
