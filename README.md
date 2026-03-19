@@ -16,19 +16,30 @@ Zero dependencies. 166 tests. Built for Claude Code.
 
 ## Install
 
-### As a Claude Code skill (recommended)
-
-Copy the skill into your project:
+### Via Claude Code CLI (recommended)
 
 ```bash
-mkdir -p .claude/skills
-cp -r slack-message-formatter .claude/skills/slack-message-formatter
+# Add the marketplace (one time)
+claude plugin marketplace add karanb192/slack-message-formatter
+
+# Install the plugin
+claude plugin install slack-message-formatter@slack-message-formatter
 ```
 
-Or into your global skills:
+### Manual install
 
 ```bash
-cp -r slack-message-formatter ~/.claude/skills/slack-message-formatter
+# Clone into your plugins directory
+git clone https://github.com/karanb192/slack-message-formatter.git \
+  ~/.claude/plugins/marketplaces/slack-message-formatter
+```
+
+### Project-level install
+
+```bash
+# Add to a specific project
+mkdir -p .claude/skills
+cp -r skills/slack-message-formatter .claude/skills/slack-message-formatter
 ```
 
 Then in Claude Code, just ask:
