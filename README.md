@@ -8,11 +8,11 @@ A Claude Code skill that formats messages for Slack with pixel-perfect accuracy.
 ## Why?
 
 - Slack uses **mrkdwn** (not Markdown). `**bold**` doesn't work — you need `*bold*`.
-- No existing tool handles both **generation AND delivery**.
-- Programmatic clipboard doesn't preserve tables. Manual browser copy does.
-- `slackify-markdown` (207k downloads/week) has [critical bugs](https://github.com/jsarafajr/slackify-markdown/issues/29) — tables unsupported, task lists stripped, `<script>` tags unescaped.
+- Existing tools handle conversion well, but none combine **generation + preview + copy-paste** in one workflow.
+- Programmatic clipboard doesn't preserve tables in Slack. Manual browser copy does.
+- This skill gives you both paths: copy-paste for humans, webhook for bots.
 
-This skill solves all of that. Zero dependencies. 100% test coverage.
+Zero dependencies. 166 tests. Built for Claude Code.
 
 ## Install
 
@@ -132,14 +132,17 @@ Comprehensive test suite with 150+ tests covering:
 - Real-world messages (deployment, incident, meeting notes, code review, sprint summary)
 - Special character escaping, Windows line endings
 
-## Prior Art
+## Acknowledgements
 
-| Tool | Stars | What it does | Tables | Preview | Copy-paste |
-|------|-------|-------------|--------|---------|------------|
-| [slackify-markdown](https://www.npmjs.com/package/slackify-markdown) | 172 | MD → mrkdwn | No | No | No |
-| [sirkitree/slack-markdown-formatter](https://github.com/sirkitree/slack-markdown-formatter) | 1 | Claude skill | No | No | No |
-| [slackdown.com](https://slackdown.com) | — | Web app | No | No | Partial |
-| **slack-message-formatter** | — | **Claude skill + CLI** | **Yes** | **Yes** | **Yes** |
+Built on the shoulders of great tools in the Slack formatting ecosystem:
+
+- [slackify-markdown](https://www.npmjs.com/package/slackify-markdown) — the most popular Markdown-to-mrkdwn converter (207k weekly downloads). Inspired our mrkdwn conversion approach.
+- [sirkitree/slack-markdown-formatter](https://github.com/sirkitree/slack-markdown-formatter) — a Claude Code skill that pioneered teaching Claude Slack formatting rules.
+- [ccheney/robust-skills](https://github.com/ccheney/robust-skills) — comprehensive mrkdwn and Block Kit skills for Claude Code.
+- [slackdown.com](https://slackdown.com) — web-based converter with HTML copy support.
+- [Slack's official docs](https://api.slack.com/reference/surfaces/formatting) — the mrkdwn specification.
+
+This tool adds **browser preview + copy-paste + table support** on top of the conversion these tools pioneered.
 
 ## License
 
