@@ -1,0 +1,11 @@
+{
+  "name": "slack-message-formatter",
+  "description": "Format messages for Slack with pixel-perfect accuracy. Converts Markdown to rich HTML for copy-paste or Slack mrkdwn for API/webhook.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Karan Bansal"
+  },
+  "repository": "https://github.com/karanb192/slack-message-formatter",
+  "license": "MIT",
+  "keywords": ["slack", "mrkdwn", "markdown", "formatter", "copy-paste", "webhook"]
+}
