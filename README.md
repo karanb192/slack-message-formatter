@@ -16,22 +16,22 @@ Zero dependencies. 166 tests. Built for Claude Code.
 
 ## Install
 
-### Global install (all projects)
+### One-liner (global — all projects)
 
 ```bash
-git clone https://github.com/karanb192/slack-message-formatter.git /tmp/smf \
-  && mkdir -p ~/.claude/skills \
-  && cp -r /tmp/smf/skills/slack-message-formatter ~/.claude/skills/ \
-  && rm -rf /tmp/smf
+curl -sSL https://raw.githubusercontent.com/karanb192/slack-message-formatter/main/install.sh | bash
 ```
 
-### Project-level install
+### Project-level only
 
 ```bash
-git clone https://github.com/karanb192/slack-message-formatter.git /tmp/smf \
-  && mkdir -p .claude/skills \
-  && cp -r /tmp/smf/skills/slack-message-formatter .claude/skills/ \
-  && rm -rf /tmp/smf
+curl -sSL https://raw.githubusercontent.com/karanb192/slack-message-formatter/main/install.sh | bash -s project
+```
+
+### Uninstall
+
+```bash
+rm -rf ~/.claude/skills/slack-message-formatter
 ```
 
 Then in Claude Code, just ask:
