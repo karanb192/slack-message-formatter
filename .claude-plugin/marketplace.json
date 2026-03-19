@@ -1,6 +1,9 @@
 {
   "name": "slack-message-formatter",
   "description": "Slack message formatting plugin for Claude Code",
+  "owner": {
+    "name": "Karan Bansal"
+  },
   "plugins": [
     {
       "name": "slack-message-formatter",
