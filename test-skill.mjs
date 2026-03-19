@@ -9,7 +9,7 @@
 
 import { execSync } from "child_process";
 
-const RUN = "src/run.mjs";
+const RUN = "skills/slack-message-formatter/src/run.mjs";
 const RESET = "\x1b[0m";
 const GREEN = "\x1b[32m";
 const RED = "\x1b[31m";

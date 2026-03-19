@@ -45,7 +45,7 @@ Run the converter script to transform the Markdown:
 
 ```bash
 # Generate preview page + copy to clipboard
-node slack-message-formatter/src/run.mjs preview <<'MARKDOWN'
+node skills/slack-message-formatter/src/run.mjs preview <<'MARKDOWN'
 <paste the markdown here>
 MARKDOWN
 ```
@@ -79,7 +79,7 @@ If clipboard was disabled or failed:
 If the user wants to send directly to Slack via webhook:
 
 ```bash
-node slack-message-formatter/src/run.mjs send <<'MARKDOWN'
+node skills/slack-message-formatter/src/run.mjs send <<'MARKDOWN'
 <paste the markdown here>
 MARKDOWN
 ```
