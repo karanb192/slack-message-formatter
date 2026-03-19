@@ -122,7 +122,7 @@ function convertToHTML(md) {
         quoteLines.push(lines[i].replace(/^>\s?/, ""));
         i++;
       }
-      result += `<blockquote>${inlineToHTML(quoteLines.join("<br>\n"))}</blockquote>\n`;
+      result += `<blockquote>${inlineToHTML(quoteLines.join("\n"))}</blockquote>\n`;
       continue;
     }
 
