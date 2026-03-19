@@ -16,15 +16,20 @@ Zero dependencies. 166 tests. Built for Claude Code.
 
 ## Install
 
-### One-liner (global — all projects)
+### Via Claude Code CLI
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/karanb192/slack-message-formatter/main/install.sh | bash
+claude plugin marketplace add karanb192/slack-message-formatter
+claude plugin install slack-message-formatter@slack-message-formatter
 ```
 
-### Project-level only
+### One-liner (curl)
 
 ```bash
+# Global (all projects)
+curl -sSL https://raw.githubusercontent.com/karanb192/slack-message-formatter/main/install.sh | bash
+
+# Project-level only
 curl -sSL https://raw.githubusercontent.com/karanb192/slack-message-formatter/main/install.sh | bash -s project
 ```
 
