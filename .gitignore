@@ -138,3 +138,6 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 output/
+
+# Claude Code project instructions (local only)
+CLAUDE.md
