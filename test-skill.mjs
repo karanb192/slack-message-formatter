@@ -912,6 +912,34 @@ test("Inline code content not transformed", "mrkdwn",
   "`**not bold**`");
 
 // =============================================================
+section("UNDERSCORE ITALIC EDGE CASES");
+// =============================================================
+
+test("snake_case not italic", "html",
+  "some_variable_name",
+  "some_variable_name<br>");
+
+test("snake_case not italic (mrkdwn passthrough)", "mrkdwn",
+  "some_variable_name",
+  "some_variable_name");
+
+test("Intentional _italic_ still works", "html",
+  "_this is italic_",
+  "<i>this is italic</i><br>");
+
+test("Mixed: italic + snake_case", "html",
+  "use _caution_ with snake_case_names",
+  "use <i>caution</i> with snake_case_names<br>");
+
+test("Multiple underscores: a_b_c_d", "html",
+  "a_b_c_d",
+  "a_b_c_d<br>");
+
+test("file_path/to_something", "html",
+  "Edit file_path/to_something",
+  "Edit file_path/to_something<br>");
+
+// =============================================================
 // SUMMARY
 // =============================================================
 

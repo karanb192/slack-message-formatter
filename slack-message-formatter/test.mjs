@@ -5,7 +5,7 @@
  * Tests both HTML and mrkdwn output against expected values.
  *
  * Run from skill dir:  node test.mjs
- * Run from repo root:  node skills/slack-message-formatter/test.mjs
+ * Run from repo root:  node slack-message-formatter/test.mjs
  */
 
 import { execSync } from "child_process";
@@ -303,6 +303,10 @@ testContains("Ampersand in code not escaped", "mrkdwn",
   "`a & b`",
   ["`a & b`"],
   ["`a &amp; b`"]);
+
+testContains("Angle brackets escaped outside Slack tokens", "mrkdwn",
+  "Use <div> tags and <#C012AB3CD>",
+  ["Use &lt;div&gt; tags", "<#C012AB3CD>"]);
 
 section("mrkdwn: Slack Tokens");
 
@@ -733,6 +737,24 @@ testContains("URL with ampersand (mrkdwn)", "mrkdwn",
   "[Link](https://example.com?a=1&b=2)",
   ["https://example.com?a=1", "Link"]);
 
+testContains("URL with parentheses (html)", "html",
+  "[Docs](https://example.com/a_(b))",
+  ['<a href="https://example.com/a_(b)">Docs</a>']);
+
+testContains("URL with parentheses (mrkdwn)", "mrkdwn",
+  "[Docs](https://example.com/a_(b))",
+  ["<https://example.com/a_(b)|Docs>"]);
+
+testContains("Unsafe javascript link left literal (html)", "html",
+  "[Click](javascript:alert(1))",
+  ["[Click](javascript:alert(1))"],
+  ['<a href="javascript:alert(1)">']);
+
+testContains("Unsafe javascript link left literal (mrkdwn)", "mrkdwn",
+  "[Click](javascript:alert(1))",
+  ["[Click](javascript:alert(1))"],
+  ["<javascript:alert(1)|Click>"]);
+
 section("Unclosed Formatting");
 
 testContains("Unclosed bold (html)", "html",
@@ -938,6 +960,10 @@ test("Mixed: italic + snake_case", "html",
 test("Multiple underscores: a_b_c_d", "html",
   "a_b_c_d",
   "a_b_c_d<br>");
+
+test("Underscore at start of word: _foo bar", "html",
+  "_foo bar",
+  "_foo bar<br>");
 
 test("file_path/to_something", "html",
   "Edit file_path/to_something",
