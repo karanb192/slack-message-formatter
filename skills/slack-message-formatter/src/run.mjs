@@ -306,9 +306,10 @@ function inlineToHTML(text) {
   // Strikethrough
   text = text.replace(/~~(.+?)~~/gs, "<s>$1</s>");
 
-  // Italic
+  // Italic (*text*)
   text = text.replace(/(?<!\*)\*([^\s*](?:.*?[^\s*])?)\*(?!\*)/gs, "<i>$1</i>");
-  text = text.replace(/(?<!_)_([^\s_](?:.*?[^\s_])?)_(?!_)/gs, "<i>$1</i>");
+  // Italic (_text_) — require word boundary so snake_case_names aren't mangled
+  text = text.replace(/(?<![a-zA-Z0-9])_([^\s_](?:.*?[^\s_])?)_(?![a-zA-Z0-9])/gs, "<i>$1</i>");
 
   // Slack tokens are already escaped as &lt;@U...&gt; etc. — that's correct for HTML display.
 

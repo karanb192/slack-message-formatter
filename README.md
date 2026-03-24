@@ -12,7 +12,7 @@ A Claude Code skill that formats messages for Slack with pixel-perfect accuracy.
 - Programmatic clipboard doesn't preserve tables in Slack. Manual browser copy does.
 - This skill gives you both paths: copy-paste for humans, webhook for bots.
 
-Zero dependencies. 166 tests. Built for Claude Code.
+Zero dependencies. 172+ tests. Built for Claude Code.
 
 ## Install
 
@@ -130,15 +130,24 @@ Through extensive testing, we discovered:
 ## Testing
 
 ```bash
-node test-skill.mjs
+node test-skill.mjs                              # from repo root
+node skills/slack-message-formatter/test.mjs     # from skill dir
 ```
 
-Comprehensive test suite with 150+ tests covering:
+Comprehensive test suite with 172+ tests covering:
 - Both HTML and mrkdwn output for every feature
 - Emoji shortcode conversion (85+ verified individually)
 - Nested formatting, edge cases, unclosed markers
 - Real-world messages (deployment, incident, meeting notes, code review, sprint summary)
 - Special character escaping, Windows line endings
+
+## Known Limitations
+
+- **Bare URLs** (`https://example.com` without link syntax) are not auto-linked. Use `[text](url)` syntax. Slack auto-links bare URLs when sent via API anyway.
+- **Relative links** (`[Docs](/path)`) are ignored — only `http://`, `https://`, and `mailto:` links are converted.
+- **Deeply nested parenthesized URLs** like `(a_(b_(c)))` may not parse correctly. Single-level parens (e.g. Wikipedia URLs) work fine.
+- **Tables in copy-paste** render as code blocks. Slack's WYSIWYG editor does not reliably accept HTML `<table>` tags when pasted alongside other rich content.
+- **`snake_case` text** is safe — underscores inside words are not misinterpreted as italic.
 
 ## Acknowledgements
 
