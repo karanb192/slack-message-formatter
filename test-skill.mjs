@@ -83,13 +83,13 @@ function section(title) {
 
 section("HTML: Basic Formatting");
 
-test("Bold **", "html", "**hello**", "<p><b>hello</b></p>");
-test("Bold __", "html", "__hello__", "<p><b>hello</b></p>");
-test("Italic *", "html", "*hello*", "<p><i>hello</i></p>");
-test("Italic _", "html", "_hello_", "<p><i>hello</i></p>");
-test("Strikethrough", "html", "~~hello~~", "<p><s>hello</s></p>");
-test("Inline code", "html", "`code`", "<p><code>code</code></p>");
-test("Bold + Italic", "html", "***hello***", "<p><b><i>hello</i></b></p>");
+test("Bold **", "html", "**hello**", "<b>hello</b><br><br>");
+test("Bold __", "html", "__hello__", "<b>hello</b><br><br>");
+test("Italic *", "html", "*hello*", "<i>hello</i><br><br>");
+test("Italic _", "html", "_hello_", "<i>hello</i><br><br>");
+test("Strikethrough", "html", "~~hello~~", "<s>hello</s><br><br>");
+test("Inline code", "html", "`code`", "<code>code</code><br><br>");
+test("Bold + Italic", "html", "***hello***", "<b><i>hello</i></b><br><br>");
 
 testContains("Multiple formatting", "html",
   "**bold** and *italic* and ~~strike~~",
@@ -917,7 +917,7 @@ section("UNDERSCORE ITALIC EDGE CASES");
 
 test("snake_case not italic", "html",
   "some_variable_name",
-  "<p>some_variable_name</p>");
+  "some_variable_name<br><br>");
 
 test("snake_case not italic (mrkdwn passthrough)", "mrkdwn",
   "some_variable_name",
@@ -925,19 +925,19 @@ test("snake_case not italic (mrkdwn passthrough)", "mrkdwn",
 
 test("Intentional _italic_ still works", "html",
   "_this is italic_",
-  "<p><i>this is italic</i></p>");
+  "<i>this is italic</i><br><br>");
 
 test("Mixed: italic + snake_case", "html",
   "use _caution_ with snake_case_names",
-  "<p>use <i>caution</i> with snake_case_names</p>");
+  "use <i>caution</i> with snake_case_names<br><br>");
 
 test("Multiple underscores: a_b_c_d", "html",
   "a_b_c_d",
-  "<p>a_b_c_d</p>");
+  "a_b_c_d<br><br>");
 
 test("file_path/to_something", "html",
   "Edit file_path/to_something",
-  "<p>Edit file_path/to_something</p>");
+  "Edit file_path/to_something<br><br>");
 
 // =============================================================
 // SUMMARY

@@ -69,7 +69,7 @@ function convertToHTML(md) {
     // Heading
     const headingMatch = line.match(/^(#{1,6})\s+(.+?)(?:\s+#+)?$/);
     if (headingMatch) {
-      result += `<p><b>${inlineToHTML(headingMatch[2])}</b></p>\n`;
+      result += `<b>${inlineToHTML(headingMatch[2])}</b><br><br>\n`;
       i++;
       continue;
     }
@@ -157,7 +157,7 @@ function convertToHTML(md) {
       paraLines.push(lines[i]);
       i++;
     }
-    result += `<p>${inlineToHTML(paraLines.join("\n"))}</p>\n`;
+    result += `${inlineToHTML(paraLines.join("\n"))}<br><br>\n`;
   }
 
   return result.trim();
@@ -434,7 +434,6 @@ pre code{background:none;padding:0;color:inherit}
 blockquote{border-left:4px solid #ddd;padding:4px 12px;margin:8px 0;color:#555}
 a{color:#1264a3;text-decoration:none}
 ul,ol{padding-left:24px;margin:4px 0}li{margin:2px 0}
-p{margin:8px 0}
 hr{border:none;border-top:1px solid #ddd;margin:12px 0}
 </style></head>
 <body>
@@ -480,8 +479,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .mc pre code{background:none;border:none;padding:0;font-size:13px;color:#d1d2d3}
 .mc blockquote{border-left:4px solid #4a154b;padding:4px 12px;margin:4px 0;color:#9a9b9e}
 .mc ul,.mc ol{padding-left:24px;margin:4px 0}.mc li{margin:2px 0}
-.mc p{margin:8px 0}
-.mc table{border-collapse:collapse;margin:8px 0;font-size:14px}
+.mc .mc table{border-collapse:collapse;margin:8px 0;font-size:14px}
 .mc th,.mc td{border:1px solid #3c3d40;padding:6px 12px}
 .mc th{background:#2c2d30;font-weight:700;color:#e8e8e8}
 .mc hr{border:none;border-top:1px solid #3c3d40;margin:12px 0}
