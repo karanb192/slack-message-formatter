@@ -141,3 +141,11 @@ output/
 
 # Claude Code project instructions (local only)
 CLAUDE.md
+
+# macOS
+.DS_Store
+
+# Local launch/marketing content
+launch-content.md
+reddit-posts.md
+screenshots/

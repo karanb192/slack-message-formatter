@@ -69,7 +69,7 @@ function convertToHTML(md) {
     // Heading
     const headingMatch = line.match(/^(#{1,6})\s+(.+?)(?:\s+#+)?$/);
     if (headingMatch) {
-      result += `<b>${inlineToHTML(headingMatch[2])}</b><br>\n`;
+      result += `<b>${inlineToHTML(headingMatch[2])}</b><br><br>\n`;
       i++;
       continue;
     }
@@ -126,6 +126,20 @@ function convertToHTML(md) {
       continue;
     }
 
+    // Task list — handle before regular list to avoid wrapping in <li>
+    if (line.match(/^\s*[-*+]\s+\[[ x]\]\s+/)) {
+      while (i < lines.length && lines[i].match(/^\s*[-*+]\s+\[[ x]\]\s+/)) {
+        const tm = lines[i].match(/^\s*[-*+]\s+\[( |x)\]\s+(.*)/);
+        if (tm) {
+          const emoji = tm[1] === "x" ? "&#x2705;" : "&#x2B1C;";
+          result += `${emoji} ${inlineToHTML(tm[2])}<br>\n`;
+        }
+        i++;
+      }
+      if (i < lines.length && !lines[i].trim()) i++;
+      continue;
+    }
+
     // Unordered list
     if (line.match(/^\s*[-*+]\s+/)) {
       result += parseHTMLList(lines, i, false);
@@ -157,7 +171,7 @@ function convertToHTML(md) {
       paraLines.push(lines[i]);
       i++;
     }
-    result += `${inlineToHTML(paraLines.join("\n"))}<br>\n`;
+    result += `${inlineToHTML(paraLines.join("\n"))}<br><br>\n`;
   }
 
   return result.trim();
@@ -196,11 +210,13 @@ function parseHTMLList(lines, startIdx, ordered) {
 
     let content = line.replace(marker, "");
 
-    // Task list
+    // Task list item inside a regular list — emit without <li> to avoid double bullet
     const taskMatch = content.match(/^\[( |x)\]\s+(.*)/);
     if (taskMatch) {
-      const emoji = taskMatch[1] === "x" ? "&#x2705; " : "&#x2B1C; ";
-      content = emoji + taskMatch[2];
+      const emoji = taskMatch[1] === "x" ? "&#x2705;" : "&#x2B1C;";
+      html += `${emoji} ${inlineToHTML(taskMatch[2])}<br>\n`;
+      i++;
+      continue;
     }
 
     // Check for nested list
@@ -479,7 +495,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .mc pre code{background:none;border:none;padding:0;font-size:13px;color:#d1d2d3}
 .mc blockquote{border-left:4px solid #4a154b;padding:4px 12px;margin:4px 0;color:#9a9b9e}
 .mc ul,.mc ol{padding-left:24px;margin:4px 0}.mc li{margin:2px 0}
-.mc table{border-collapse:collapse;margin:8px 0;font-size:14px}
+.mc .mc table{border-collapse:collapse;margin:8px 0;font-size:14px}
 .mc th,.mc td{border:1px solid #3c3d40;padding:6px 12px}
 .mc th{background:#2c2d30;font-weight:700;color:#e8e8e8}
 .mc hr{border:none;border-top:1px solid #3c3d40;margin:12px 0}
