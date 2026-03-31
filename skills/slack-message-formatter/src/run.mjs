@@ -126,6 +126,20 @@ function convertToHTML(md) {
       continue;
     }
 
+    // Task list — handle before regular list to avoid wrapping in <li>
+    if (line.match(/^\s*[-*+]\s+\[[ x]\]\s+/)) {
+      while (i < lines.length && lines[i].match(/^\s*[-*+]\s+\[[ x]\]\s+/)) {
+        const tm = lines[i].match(/^\s*[-*+]\s+\[( |x)\]\s+(.*)/);
+        if (tm) {
+          const emoji = tm[1] === "x" ? "&#x2705;" : "&#x2B1C;";
+          result += `${emoji} ${inlineToHTML(tm[2])}<br>\n`;
+        }
+        i++;
+      }
+      if (i < lines.length && !lines[i].trim()) i++;
+      continue;
+    }
+
     // Unordered list
     if (line.match(/^\s*[-*+]\s+/)) {
       result += parseHTMLList(lines, i, false);
@@ -196,11 +210,13 @@ function parseHTMLList(lines, startIdx, ordered) {
 
     let content = line.replace(marker, "");
 
-    // Task list
+    // Task list item inside a regular list — emit without <li> to avoid double bullet
     const taskMatch = content.match(/^\[( |x)\]\s+(.*)/);
     if (taskMatch) {
-      const emoji = taskMatch[1] === "x" ? "&#x2705; " : "&#x2B1C; ";
-      content = emoji + taskMatch[2];
+      const emoji = taskMatch[1] === "x" ? "&#x2705;" : "&#x2B1C;";
+      html += `${emoji} ${inlineToHTML(taskMatch[2])}<br>\n`;
+      i++;
+      continue;
     }
 
     // Check for nested list

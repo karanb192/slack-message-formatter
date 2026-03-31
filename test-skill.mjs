@@ -137,11 +137,11 @@ testContains("Ordered list", "html",
 
 testContains("Task list checked", "html",
   "- [x] Done task",
-  ["&#x2705;", "Done task", "<li>"]);
+  ["&#x2705;", "Done task"]);
 
 testContains("Task list unchecked", "html",
   "- [ ] Pending task",
-  ["&#x2B1C;", "Pending task", "<li>"]);
+  ["&#x2B1C;", "Pending task"]);
 
 section("HTML: Tables (as code blocks)");
 
