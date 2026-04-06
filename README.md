@@ -14,6 +14,8 @@ A Claude Code skill that formats messages for Slack with pixel-perfect accuracy.
 
 Zero dependencies. 172+ tests. Built for Claude Code.
 
+![Demo](demo.gif)
+
 ## Install
 
 ### Via Claude Code CLI

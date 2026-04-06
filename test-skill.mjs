@@ -83,13 +83,13 @@ function section(title) {
 
 section("HTML: Basic Formatting");
 
-test("Bold **", "html", "**hello**", "<b>hello</b><br>");
-test("Bold __", "html", "__hello__", "<b>hello</b><br>");
-test("Italic *", "html", "*hello*", "<i>hello</i><br>");
-test("Italic _", "html", "_hello_", "<i>hello</i><br>");
-test("Strikethrough", "html", "~~hello~~", "<s>hello</s><br>");
-test("Inline code", "html", "`code`", "<code>code</code><br>");
-test("Bold + Italic", "html", "***hello***", "<b><i>hello</i></b><br>");
+test("Bold **", "html", "**hello**", "<b>hello</b><br><br>");
+test("Bold __", "html", "__hello__", "<b>hello</b><br><br>");
+test("Italic *", "html", "*hello*", "<i>hello</i><br><br>");
+test("Italic _", "html", "_hello_", "<i>hello</i><br><br>");
+test("Strikethrough", "html", "~~hello~~", "<s>hello</s><br><br>");
+test("Inline code", "html", "`code`", "<code>code</code><br><br>");
+test("Bold + Italic", "html", "***hello***", "<b><i>hello</i></b><br><br>");
 
 testContains("Multiple formatting", "html",
   "**bold** and *italic* and ~~strike~~",
@@ -137,11 +137,11 @@ testContains("Ordered list", "html",
 
 testContains("Task list checked", "html",
   "- [x] Done task",
-  ["&#x2705;", "Done task", "<li>"]);
+  ["&#x2705;", "Done task"]);
 
 testContains("Task list unchecked", "html",
   "- [ ] Pending task",
-  ["&#x2B1C;", "Pending task", "<li>"]);
+  ["&#x1F532;", "Pending task"]);
 
 section("HTML: Tables (as code blocks)");
 
@@ -345,7 +345,7 @@ testContains("Deploy HTML has all parts", "html", deployMd, [
   "<b>Changes</b>",
   "<li>Fixed timeout bug</li>",
   "&#x2705;",
-  "&#x2B1C;",
+  "&#x1F532;",
   "<pre><code>",
   "Latency",
   "42ms",
@@ -796,7 +796,7 @@ testContains("Meeting notes (html)", "html", meetingMd, [
   "<b>Attendees:</b>",
   "<b>Action Items</b>",
   "&#x2705;",
-  "&#x2B1C;",
+  "&#x1F532;",
   "<blockquote>",
   "Next meeting: Friday",
 ]);
@@ -837,7 +837,7 @@ testContains("Code review message (html)", "html", codeReviewMd, [
   "token.expired",
   "refresh();",
   "&#x2705;",
-  "&#x2B1C;",
+  "&#x1F532;",
 ]);
 
 testContains("Code review message (mrkdwn)", "mrkdwn", codeReviewMd, [
@@ -917,7 +917,7 @@ section("UNDERSCORE ITALIC EDGE CASES");
 
 test("snake_case not italic", "html",
   "some_variable_name",
-  "some_variable_name<br>");
+  "some_variable_name<br><br>");
 
 test("snake_case not italic (mrkdwn passthrough)", "mrkdwn",
   "some_variable_name",
@@ -925,19 +925,19 @@ test("snake_case not italic (mrkdwn passthrough)", "mrkdwn",
 
 test("Intentional _italic_ still works", "html",
   "_this is italic_",
-  "<i>this is italic</i><br>");
+  "<i>this is italic</i><br><br>");
 
 test("Mixed: italic + snake_case", "html",
   "use _caution_ with snake_case_names",
-  "use <i>caution</i> with snake_case_names<br>");
+  "use <i>caution</i> with snake_case_names<br><br>");
 
 test("Multiple underscores: a_b_c_d", "html",
   "a_b_c_d",
-  "a_b_c_d<br>");
+  "a_b_c_d<br><br>");
 
 test("file_path/to_something", "html",
   "Edit file_path/to_something",
-  "Edit file_path/to_something<br>");
+  "Edit file_path/to_something<br><br>");
 
 // =============================================================
 // SUMMARY

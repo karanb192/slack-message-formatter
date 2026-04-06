@@ -113,6 +113,17 @@ Slack uses **mrkdwn** (not Markdown). Key differences:
 | `SLACK_FORMATTER_PREVIEW_DIR` | `/tmp/slack-formatter` | Directory for preview HTML files |
 | `CCH_SLA_WEBHOOK` | (none) | Slack webhook URL for sending messages |
 
+## Content Guidelines
+
+- **Always hyperlink ticket IDs and PR references.** Never write bare `ENG-12345`
+  or `#123` — always use `[ENG-12345](https://armorcodeinc.atlassian.net/browse/ENG-12345)`
+  or `[PR #123](url)`. This applies to every occurrence, not just the first.
+- **Use blank lines between paragraphs.** Each distinct thought should be its own
+  paragraph with a blank line before it. Never write multiple paragraphs as a wall
+  of text — Slack collapses them together without spacing.
+- **Keep messages concise.** Slack messages should be scannable. Lead with the key
+  point, use bullet points for details, cut filler words.
+
 ## Important Notes
 
 - **Always generate Markdown first**, then convert. Never generate mrkdwn or HTML directly — the converter is deterministic and correct, LLM output of these formats is not.
