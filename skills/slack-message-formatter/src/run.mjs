@@ -131,7 +131,7 @@ function convertToHTML(md) {
       while (i < lines.length && lines[i].match(/^\s*[-*+]\s+\[[ x]\]\s+/)) {
         const tm = lines[i].match(/^\s*[-*+]\s+\[( |x)\]\s+(.*)/);
         if (tm) {
-          const emoji = tm[1] === "x" ? "&#x2705;" : "&#x2B1C;";
+          const emoji = tm[1] === "x" ? "&#x2705;" : "&#x1F532;";
           result += `${emoji} ${inlineToHTML(tm[2])}<br>\n`;
         }
         i++;
@@ -213,7 +213,7 @@ function parseHTMLList(lines, startIdx, ordered) {
     // Task list item inside a regular list — emit without <li> to avoid double bullet
     const taskMatch = content.match(/^\[( |x)\]\s+(.*)/);
     if (taskMatch) {
-      const emoji = taskMatch[1] === "x" ? "&#x2705;" : "&#x2B1C;";
+      const emoji = taskMatch[1] === "x" ? "&#x2705;" : "&#x1F532;";
       html += `${emoji} ${inlineToHTML(taskMatch[2])}<br>\n`;
       i++;
       continue;

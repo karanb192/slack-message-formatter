@@ -141,7 +141,7 @@ testContains("Task list checked", "html",
 
 testContains("Task list unchecked", "html",
   "- [ ] Pending task",
-  ["&#x2B1C;", "Pending task"]);
+  ["&#x1F532;", "Pending task"]);
 
 section("HTML: Tables (as code blocks)");
 
@@ -345,7 +345,7 @@ testContains("Deploy HTML has all parts", "html", deployMd, [
   "<b>Changes</b>",
   "<li>Fixed timeout bug</li>",
   "&#x2705;",
-  "&#x2B1C;",
+  "&#x1F532;",
   "<pre><code>",
   "Latency",
   "42ms",
@@ -796,7 +796,7 @@ testContains("Meeting notes (html)", "html", meetingMd, [
   "<b>Attendees:</b>",
   "<b>Action Items</b>",
   "&#x2705;",
-  "&#x2B1C;",
+  "&#x1F532;",
   "<blockquote>",
   "Next meeting: Friday",
 ]);
@@ -837,7 +837,7 @@ testContains("Code review message (html)", "html", codeReviewMd, [
   "token.expired",
   "refresh();",
   "&#x2705;",
-  "&#x2B1C;",
+  "&#x1F532;",
 ]);
 
 testContains("Code review message (mrkdwn)", "mrkdwn", codeReviewMd, [
