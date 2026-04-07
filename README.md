@@ -18,27 +18,40 @@ Zero dependencies. 172+ tests. Built for Claude Code.
 
 ## Install
 
-### Via Claude Code CLI
+### Claude Code (recommended)
 
 ```bash
 claude plugin marketplace add karanb192/slack-message-formatter
 claude plugin install slack-message-formatter@slack-message-formatter
 ```
 
-### One-liner (curl)
+### Codex
 
 ```bash
-# Global (all projects)
+curl -sSL https://raw.githubusercontent.com/karanb192/slack-message-formatter/main/install.sh | bash -s codex
+```
+
+### Manual install (curl)
+
+```bash
+# Claude Code global
 curl -sSL https://raw.githubusercontent.com/karanb192/slack-message-formatter/main/install.sh | bash
 
-# Project-level only
+# Codex global
+curl -sSL https://raw.githubusercontent.com/karanb192/slack-message-formatter/main/install.sh | bash -s codex
+
+# Current project only (auto-detects Claude Code or Codex)
 curl -sSL https://raw.githubusercontent.com/karanb192/slack-message-formatter/main/install.sh | bash -s project
 ```
 
 ### Uninstall
 
 ```bash
+# Claude Code
 rm -rf ~/.claude/skills/slack-message-formatter
+
+# Codex
+rm -rf "${CODEX_HOME:-$HOME/.codex}/skills/slack-message-formatter"
 ```
 
 Then in Claude Code, just ask:
