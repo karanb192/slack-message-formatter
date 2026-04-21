@@ -44,6 +44,17 @@ curl -sSL https://raw.githubusercontent.com/karanb192/slack-message-formatter/ma
 curl -sSL https://raw.githubusercontent.com/karanb192/slack-message-formatter/main/install.sh | bash -s project
 ```
 
+### Updating
+
+The marketplace tracks the `main` branch of this repo. Claude Code auto-updates marketplace plugins at startup, so most users will pick up changes on their next restart.
+
+To refresh immediately without restarting:
+
+```
+/plugin marketplace update slack-message-formatter
+/reload-plugins
+```
+
 ### Uninstall
 
 ```bash
