@@ -37,7 +37,7 @@ Always generate the message content in **standard Markdown**. This is your nativ
 - `- [ ]` / `- [x]` task lists (converted to emoji checkboxes)
 - `---` horizontal rules (converted to unicode separator)
 - Nested lists, blockquotes, code blocks with language hints
-- Slack mentions like `<@U012AB3CD>`, `<#C012AB3CD>`, `<!here>` — pass through as-is
+- Slack mentions: **only work via the API/webhook path.** See "Mentions" below.
 
 ### Step 2: Convert and deliver
 
@@ -115,18 +115,33 @@ Slack uses **mrkdwn** (not Markdown). Key differences:
 
 ## Content Guidelines
 
+- **Default to succinct.** Slack messages should be as short as possible while
+  still conveying the point. Lead with the key point, use bullets for details,
+  cut filler words and preamble. Only go verbose if the user explicitly asks for
+  a longer / more detailed version.
 - **Always hyperlink ticket IDs and PR references.** Never write bare `ENG-12345`
   or `#123` — always use `[ENG-12345](https://armorcodeinc.atlassian.net/browse/ENG-12345)`
   or `[PR #123](url)`. This applies to every occurrence, not just the first.
 - **Use blank lines between paragraphs.** Each distinct thought should be its own
   paragraph with a blank line before it. Never write multiple paragraphs as a wall
   of text — Slack collapses them together without spacing.
-- **Keep messages concise.** Slack messages should be scannable. Lead with the key
-  point, use bullet points for details, cut filler words.
+
+## Mentions
+
+Slack mention tokens (`<@U012AB3CD>`, `<#C012AB3CD>`, `<!here>`, `<!channel>`,
+`<!everyone>`) **only resolve via the API/webhook path**. They do NOT resolve
+when pasted into Slack's compose box — Slack renders them as literal text.
+
+- **Copy-paste path:** write mentions as plain `@DisplayName` (e.g., `@Shakti`).
+  Tell the user they'll need to re-type the `@` after pasting so Slack's
+  autocomplete kicks in and links the user. Never emit `<@U...>` syntax on this
+  path.
+- **API/Webhook path (`send`):** use `<@U012AB3CD>` / `<#C012AB3CD>` / `<!here>`
+  as-is. The converter preserves them and Slack resolves them server-side.
 
 ## Important Notes
 
 - **Always generate Markdown first**, then convert. Never generate mrkdwn or HTML directly — the converter is deterministic and correct, LLM output of these formats is not.
-- **Slack mentions** (`<@U...>`, `<#C...>`, `<!here>`, `<!channel>`, `<!everyone>`) should be included in the Markdown as-is. The converter preserves them.
+- **Slack mention tokens only resolve on the API/webhook path.** See the "Mentions" section above for the per-path rules.
 - **Tables work via the HTML copy-paste path** but not via mrkdwn (Slack has no table syntax). Tables are converted to code blocks in the mrkdwn output.
 - **Preview files are timestamped** so users can revisit them from conversation history.
