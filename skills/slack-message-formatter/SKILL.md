@@ -127,6 +127,10 @@ must be super concise and structured — never paragraphs of prose.**
 - **Cut ruthlessly.** No preamble ("I wanted to share…", "Quick update on…"),
   no filler ("as you may know", "just", "basically"), no restating the
   headline in the context line, no sign-offs. Lead with the point.
+- **NEVER use em dashes (—).** They scream AI-generated. Use a comma, a
+  period, a colon, or parentheses instead. This applies to every sentence,
+  including headlines and bullets. Plain hyphens in ranges (`12:30-2:00 PM`)
+  and compound words are fine.
 - **Always hyperlink ticket IDs and PR references.** Never write bare `ENG-12345`
   or `#123` — always use `[ENG-12345](https://yoursite.atlassian.net/browse/ENG-12345)`
   or `[PR #123](url)`. This applies to every occurrence, not just the first.
