@@ -140,7 +140,7 @@ function convertToHTML(md) {
         }
         i++;
       }
-      blocks.push(["list", taskLines.join("<br>\n")]);
+      blocks.push(["tasks", taskLines.join("<br>\n")]);
       if (i < lines.length && !lines[i].trim()) i++;
       continue;
     }
@@ -179,17 +179,26 @@ function convertToHTML(md) {
     blocks.push(["text", inlineToHTML(paraLines.join("\n"))]);
   }
 
-  // Join blocks: lists and code blocks attach tightly to the text that
-  // introduces them; every other block boundary gets exactly one blank line
-  // (<br><br>). No trailing breaks after the last block — Slack pastes them
-  // as empty lines at the end of the message.
+  // Join blocks: lists, task lists, and code blocks attach tightly to the
+  // text that introduces them; every other block boundary gets exactly one
+  // blank line. A closing block tag (</ul>, </blockquote>, …) already starts
+  // a new line, so one <br> after it renders as one blank line — both in the
+  // browser and in Slack's paste handler (verified). Inline-ending blocks
+  // (paragraphs, headings, task lines) need <br><br> for the same gap. No
+  // trailing breaks after the last block — Slack pastes them as empty lines.
   let result = "";
   for (let k = 0; k < blocks.length; k++) {
-    result += blocks[k][1];
+    const [type, html] = blocks[k];
+    result += html;
     if (k < blocks.length - 1) {
       const next = blocks[k + 1][0];
-      const attached = blocks[k][0] === "text" && (next === "list" || next === "pre");
-      result += attached ? "\n" : "<br><br>\n";
+      const attached = type === "text" && (next === "list" || next === "tasks" || next === "pre");
+      if (attached) {
+        result += "\n";
+      } else {
+        const endsBlock = /(?:<\/(?:ul|ol|pre|blockquote)>|<hr>)$/.test(html);
+        result += endsBlock ? "<br>\n" : "<br><br>\n";
+      }
     }
   }
   return result;

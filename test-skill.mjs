@@ -474,17 +474,21 @@ testContains("Paragraph attaches to following code block", "html",
   "Run this:\n\n```\nls\n```",
   ["Run this:\n<pre><code>ls</code></pre>"]);
 
+testContains("Paragraph attaches to following task list", "html",
+  "Status:\n\n- [x] done",
+  ["Status:\n&#x2705; done"]);
+
 testContains("List followed by paragraph gets a blank line", "html",
   "- a\n- b\n\n**Impact:** high",
-  ["</ul><br><br>\n<b>Impact:</b> high"]);
+  ["</ul><br>\n<b>Impact:</b> high"]);
 
 testContains("Blockquote followed by paragraph gets a blank line", "html",
   "> quoted tip\n\n**Impact:** high",
-  ["</blockquote><br><br>\n<b>Impact:</b> high"]);
+  ["</blockquote><br>\n<b>Impact:</b> high"]);
 
 testContains("Bullet list and task list separated by a blank line", "html",
   "- bullet\n\n- [x] done",
-  ["</ul><br><br>\n&#x2705; done"]);
+  ["</ul><br>\n&#x2705; done"]);
 
 // =============================================================
 // JIRA AUTO-LINKING (JIRA_BASE_URL)
