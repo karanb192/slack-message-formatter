@@ -40,7 +40,9 @@ function escapeHtml(t) {
 }
 
 function convertToHTML(md) {
-  let result = "";
+  // Parse into typed blocks, then join with spacing rules — see the join at
+  // the bottom of this function.
+  const blocks = [];
   const lines = md.split("\n");
   let i = 0;
 
@@ -63,21 +65,21 @@ function convertToHTML(md) {
         i++;
       }
       i++; // skip closing ```
-      result += `<pre><code>${escapeHtml(codeLines.join("\n"))}</code></pre>\n`;
+      blocks.push(["pre", `<pre><code>${escapeHtml(codeLines.join("\n"))}</code></pre>`]);
       continue;
     }
 
     // Heading
     const headingMatch = line.match(/^(#{1,6})\s+(.+?)(?:\s+#+)?$/);
     if (headingMatch) {
-      result += `<b>${inlineToHTML(headingMatch[2])}</b><br><br>\n`;
+      blocks.push(["text", `<b>${inlineToHTML(headingMatch[2])}</b>`]);
       i++;
       continue;
     }
 
     // HR
     if (line.match(/^(?:---+|\*\*\*+|___+)\s*$/)) {
-      result += `<hr>\n`;
+      blocks.push(["block", "<hr>"]);
       i++;
       continue;
     }
@@ -112,7 +114,7 @@ function convertToHTML(md) {
       for (const row of bodyRows) {
         tableText += row.map((c, j) => pad(c || "", colWidths[j])).join(" | ") + "\n";
       }
-      result += `<pre><code>${escapeHtml(tableText.trimEnd())}</code></pre>\n`;
+      blocks.push(["pre", `<pre><code>${escapeHtml(tableText.trimEnd())}</code></pre>`]);
       continue;
     }
 
@@ -123,27 +125,29 @@ function convertToHTML(md) {
         quoteLines.push(lines[i].replace(/^>\s?/, ""));
         i++;
       }
-      result += `<blockquote>${inlineToHTML(quoteLines.join("\n"))}</blockquote>\n`;
+      blocks.push(["block", `<blockquote>${inlineToHTML(quoteLines.join("\n"))}</blockquote>`]);
       continue;
     }
 
     // Task list — handle before regular list to avoid wrapping in <li>
     if (line.match(/^\s*[-*+]\s+\[[ x]\]\s+/)) {
+      const taskLines = [];
       while (i < lines.length && lines[i].match(/^\s*[-*+]\s+\[[ x]\]\s+/)) {
         const tm = lines[i].match(/^\s*[-*+]\s+\[( |x)\]\s+(.*)/);
         if (tm) {
           const emoji = tm[1] === "x" ? "&#x2705;" : "&#x1F532;";
-          result += `${emoji} ${inlineToHTML(tm[2])}<br>\n`;
+          taskLines.push(`${emoji} ${inlineToHTML(tm[2])}`);
         }
         i++;
       }
+      blocks.push(["list", taskLines.join("<br>\n")]);
       if (i < lines.length && !lines[i].trim()) i++;
       continue;
     }
 
     // Unordered list
     if (line.match(/^\s*[-*+]\s+/)) {
-      result += parseHTMLList(lines, i, false);
+      blocks.push(["list", parseHTMLList(lines, i, false).trimEnd()]);
       while (i < lines.length && (lines[i].match(/^\s*[-*+]\s+/) || lines[i].match(/^\s+\S/))) i++;
       // Skip trailing blank
       if (i < lines.length && !lines[i].trim()) i++;
@@ -152,7 +156,7 @@ function convertToHTML(md) {
 
     // Ordered list
     if (line.match(/^\s*\d+[.)]\s+/)) {
-      result += parseHTMLList(lines, i, true);
+      blocks.push(["list", parseHTMLList(lines, i, true).trimEnd()]);
       while (i < lines.length && (lines[i].match(/^\s*\d+[.)]\s+/) || lines[i].match(/^\s+\S/))) i++;
       if (i < lines.length && !lines[i].trim()) i++;
       continue;
@@ -172,10 +176,23 @@ function convertToHTML(md) {
       paraLines.push(lines[i]);
       i++;
     }
-    result += `${inlineToHTML(paraLines.join("\n"))}<br><br>\n`;
+    blocks.push(["text", inlineToHTML(paraLines.join("\n"))]);
   }
 
-  return result.trim();
+  // Join blocks: lists and code blocks attach tightly to the text that
+  // introduces them; every other block boundary gets exactly one blank line
+  // (<br><br>). No trailing breaks after the last block — Slack pastes them
+  // as empty lines at the end of the message.
+  let result = "";
+  for (let k = 0; k < blocks.length; k++) {
+    result += blocks[k][1];
+    if (k < blocks.length - 1) {
+      const next = blocks[k + 1][0];
+      const attached = blocks[k][0] === "text" && (next === "list" || next === "pre");
+      result += attached ? "\n" : "<br><br>\n";
+    }
+  }
+  return result;
 }
 
 function parseTableRow(line) {
@@ -462,6 +479,21 @@ function convertToMrkdwn(md) {
   // Unordered list bullets
   result = result.replace(/^(\s*)[-*+]\s+/gm, "$1• ");
 
+  // A list attaches tightly to the text line that introduces it — drop the
+  // blank line between an intro line and its first bullet/task. Blank lines
+  // between two list groups, or after quotes/code blocks, stay.
+  {
+    const ls = result.split("\n");
+    const isList = (l) => /^\s*(?:•|\d+[.)]\s|:white_check_mark:|:black_square_button:)/.test(l);
+    for (let k = ls.length - 1; k >= 2; k--) {
+      if (isList(ls[k]) && !ls[k - 1].trim() && ls[k - 2].trim() &&
+          !isList(ls[k - 2]) && !ls[k - 2].startsWith(">") && !ls[k - 2].includes("\x00")) {
+        ls.splice(k - 1, 1);
+      }
+    }
+    result = ls.join("\n");
+  }
+
   // Escape &
   result = result.replace(/&(?!amp;|lt;|gt;)/g, "&amp;");
 
@@ -690,7 +722,9 @@ switch (command) {
       } catch {}
     }
 
-    const ts = new Date().toISOString().replace(/T/, "-").replace(/:/g, "").slice(0, 15);
+    // Second+millisecond resolution — minute-only timestamps made runs in the
+    // same minute silently overwrite each other's preview files
+    const ts = new Date().toISOString().replace(/T/, "-").replace(/[:.]/g, "").slice(0, 21);
     const copyPath = join(PREVIEW_DIR, `copy-${ts}.html`);
     const previewPath = join(PREVIEW_DIR, `preview-${ts}.html`);
 

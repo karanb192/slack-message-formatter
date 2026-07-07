@@ -87,13 +87,13 @@ function section(title) {
 
 section("HTML: Basic Formatting");
 
-test("Bold **", "html", "**hello**", "<b>hello</b><br><br>");
-test("Bold __", "html", "__hello__", "<b>hello</b><br><br>");
-test("Italic *", "html", "*hello*", "<i>hello</i><br><br>");
-test("Italic _", "html", "_hello_", "<i>hello</i><br><br>");
-test("Strikethrough", "html", "~~hello~~", "<s>hello</s><br><br>");
-test("Inline code", "html", "`code`", "<code>code</code><br><br>");
-test("Bold + Italic", "html", "***hello***", "<b><i>hello</i></b><br><br>");
+test("Bold **", "html", "**hello**", "<b>hello</b>");
+test("Bold __", "html", "__hello__", "<b>hello</b>");
+test("Italic *", "html", "*hello*", "<i>hello</i>");
+test("Italic _", "html", "_hello_", "<i>hello</i>");
+test("Strikethrough", "html", "~~hello~~", "<s>hello</s>");
+test("Inline code", "html", "`code`", "<code>code</code>");
+test("Bold + Italic", "html", "***hello***", "<b><i>hello</i></b>");
 
 testContains("Multiple formatting", "html",
   "**bold** and *italic* and ~~strike~~",
@@ -362,6 +362,28 @@ testContains("Mention with label preserved", "mrkdwn",
   "Hey <@U012AB3CD|alice>",
   ["<@U012AB3CD|alice>"]);
 
+section("mrkdwn: List Spacing (list attaches to its intro line)");
+
+test("Blank line before list collapsed", "mrkdwn",
+  "Intro line:\n\n- a\n- b",
+  "Intro line:\n• a\n• b");
+
+test("Blank line before task list collapsed", "mrkdwn",
+  "Status:\n\n- [x] done\n- [ ] pending",
+  "Status:\n:white_check_mark: done\n:black_square_button: pending");
+
+testContains("Blank line between two list groups kept", "mrkdwn",
+  "- a\n\n- [x] done",
+  ["• a\n\n:white_check_mark: done"]);
+
+testContains("Blank line after list kept", "mrkdwn",
+  "- a\n\n**Impact:** high",
+  ["• a\n\n*Impact:* high"]);
+
+testContains("Blank line after blockquote kept", "mrkdwn",
+  "> tip\n\n- a",
+  ["> tip\n\n• a"]);
+
 section("mrkdwn: Slack Tokens");
 
 testContains("User mention preserved", "mrkdwn",
@@ -428,6 +450,41 @@ testContains("Paragraph spaces NOT converted to &#160;", "html",
   "with **bold** and *ital* end",
   ["with <b>bold</b> and <i>ital</i> end"],
   ["&#160;"]);
+
+section("HTML: Block Spacing (lists/code attach to intro; blank line elsewhere)");
+
+test("Single paragraph has no trailing breaks", "html",
+  "hello world", "hello world");
+
+testContains("Paragraphs separated by one blank line", "html",
+  "First para.\n\nSecond para.",
+  ["First para.<br><br>\nSecond para."]);
+
+testContains("Paragraph attaches to following list", "html",
+  "Intro line:\n\n- a\n- b",
+  ["Intro line:\n<ul>"],
+  ["Intro line:<br>"]);
+
+testContains("Heading attaches to following list", "html",
+  "## Changes\n\n- a",
+  ["<b>Changes</b>\n<ul>"],
+  ["<b>Changes</b><br>"]);
+
+testContains("Paragraph attaches to following code block", "html",
+  "Run this:\n\n```\nls\n```",
+  ["Run this:\n<pre><code>ls</code></pre>"]);
+
+testContains("List followed by paragraph gets a blank line", "html",
+  "- a\n- b\n\n**Impact:** high",
+  ["</ul><br><br>\n<b>Impact:</b> high"]);
+
+testContains("Blockquote followed by paragraph gets a blank line", "html",
+  "> quoted tip\n\n**Impact:** high",
+  ["</blockquote><br><br>\n<b>Impact:</b> high"]);
+
+testContains("Bullet list and task list separated by a blank line", "html",
+  "- bullet\n\n- [x] done",
+  ["</ul><br><br>\n&#x2705; done"]);
 
 // =============================================================
 // JIRA AUTO-LINKING (JIRA_BASE_URL)
@@ -1119,7 +1176,7 @@ section("UNDERSCORE ITALIC EDGE CASES");
 
 test("snake_case not italic", "html",
   "some_variable_name",
-  "some_variable_name<br><br>");
+  "some_variable_name");
 
 test("snake_case not italic (mrkdwn passthrough)", "mrkdwn",
   "some_variable_name",
@@ -1127,19 +1184,19 @@ test("snake_case not italic (mrkdwn passthrough)", "mrkdwn",
 
 test("Intentional _italic_ still works", "html",
   "_this is italic_",
-  "<i>this is italic</i><br><br>");
+  "<i>this is italic</i>");
 
 test("Mixed: italic + snake_case", "html",
   "use _caution_ with snake_case_names",
-  "use <i>caution</i> with snake_case_names<br><br>");
+  "use <i>caution</i> with snake_case_names");
 
 test("Multiple underscores: a_b_c_d", "html",
   "a_b_c_d",
-  "a_b_c_d<br><br>");
+  "a_b_c_d");
 
 test("file_path/to_something", "html",
   "Edit file_path/to_something",
-  "Edit file_path/to_something<br><br>");
+  "Edit file_path/to_something");
 
 // =============================================================
 // SEND COMMAND — real HTTP round-trip against a local server

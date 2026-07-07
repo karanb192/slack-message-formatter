@@ -12,7 +12,7 @@ A Claude Code skill that formats messages for Slack with pixel-perfect accuracy.
 - Programmatic clipboard doesn't preserve tables in Slack. Manual browser copy does.
 - This skill gives you both paths: copy-paste for humans, webhook for bots.
 
-Zero dependencies. 218+ tests. Built for Claude Code.
+Zero dependencies. 231+ tests. Built for Claude Code.
 
 ![Demo](demo.gif)
 
@@ -176,7 +176,7 @@ Through extensive testing, we discovered:
 node test-skill.mjs   # from repo root
 ```
 
-Comprehensive test suite with 218+ tests covering:
+Comprehensive test suite with 231+ tests covering:
 - Both HTML and mrkdwn output for every feature
 - Emoji shortcode conversion (85+ verified individually)
 - Nested formatting, edge cases, unclosed markers
