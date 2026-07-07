@@ -112,19 +112,61 @@ Slack uses **mrkdwn** (not Markdown). Key differences:
 | `SLACK_FORMATTER_CLIPBOARD` | `true` | Set to `false` to disable auto-clipboard copy |
 | `SLACK_FORMATTER_PREVIEW_DIR` | `/tmp/slack-formatter` | Directory for preview HTML files |
 | `CCH_SLA_WEBHOOK` | (none) | Slack webhook URL for sending messages |
+| `JIRA_BASE_URL` | (none) | Jira site URL (e.g. `https://yoursite.atlassian.net`). When set, bare ticket keys like `ENG-12345` are auto-linked to `$JIRA_BASE_URL/browse/ENG-12345` on every output path. Keys inside code, existing links, or URLs are left alone. |
 
 ## Content Guidelines
 
-- **Default to succinct.** Slack messages should be as short as possible while
-  still conveying the point. Lead with the key point, use bullets for details,
-  cut filler words and preamble. Only go verbose if the user explicitly asks for
-  a longer / more detailed version.
+**These are hard rules, not suggestions. Slack messages produced by this skill
+must be super concise and structured — never paragraphs of prose.**
+
+- **Bullets over paragraphs, always.** If a message has more than one fact,
+  those facts go in bullets. A prose paragraph is only acceptable as the single
+  one-line context sentence under the headline. If you catch yourself writing
+  a second sentence in a row, convert to bullets.
+- **Hard length caps.** Headline: one line. Context: one line. Bullets: 2-5,
+  each a single line (no wrapping walls of text inside a bullet). Closing
+  `**Impact:**` / `**Ask:**` / `**Next:**` line: one line. If the content
+  doesn't fit, cut detail — don't add paragraphs. Link out for depth instead
+  of inlining it.
+- **Cut ruthlessly.** No preamble ("I wanted to share…", "Quick update on…"),
+  no filler ("as you may know", "just", "basically"), no restating the
+  headline in the context line, no sign-offs. Lead with the point.
 - **Always hyperlink ticket IDs and PR references.** Never write bare `ENG-12345`
-  or `#123` — always use `[ENG-12345](https://armorcodeinc.atlassian.net/browse/ENG-12345)`
+  or `#123` — always use `[ENG-12345](https://yoursite.atlassian.net/browse/ENG-12345)`
   or `[PR #123](url)`. This applies to every occurrence, not just the first.
-- **Use blank lines between paragraphs.** Each distinct thought should be its own
-  paragraph with a blank line before it. Never write multiple paragraphs as a wall
-  of text — Slack collapses them together without spacing.
+  If `JIRA_BASE_URL` is set, the converter auto-links bare Jira keys for you —
+  but explicit links in the Markdown are still preferred (they survive with
+  any configuration and let you control the link target).
+- **Use blank lines between blocks.** Headline, context, bullet group, and
+  closing line are each their own block with a blank line between — Slack
+  collapses adjacent lines together without spacing.
+- **Only go longer if the user explicitly asks** for a detailed / verbose
+  version. Even then, keep the structure — more bullets and sections, not prose.
+
+## Default Message Structure
+
+Every message defaults to this shape — status updates, announcements, alerts,
+FYIs. Do not emit free-form paragraphs unless the user explicitly asks for prose.
+
+```markdown
+**Bold headline** ⚠️
+
+One line of context (with a link if relevant).
+
+- Evidence / detail bullet 1
+- Evidence / detail bullet 2
+- Evidence / detail bullet 3
+
+**Impact:** one line.
+```
+
+- **Headline first** — bold, one line, optionally a status emoji (⚠️ 🚨 ✅ 🎉).
+- **One line of context** — what happened / why it matters, with a link.
+- **Bullets for everything else** — 2-5 short scannable bullets, never paragraphs.
+- **End with a labeled line** — `**Impact:**`, `**Ask:**`, or `**Next:**`
+  so readers know what to do without reading everything above.
+- Skip blocks that don't apply (a two-line FYI doesn't need bullets or an
+  Impact line) — but never replace a block with prose.
 
 ## Mentions
 
@@ -135,7 +177,9 @@ when pasted into Slack's compose box — Slack renders them as literal text.
 - **Copy-paste path:** write mentions as plain `@DisplayName` (e.g., `@Shakti`).
   Tell the user they'll need to re-type the `@` after pasting so Slack's
   autocomplete kicks in and links the user. Never emit `<@U...>` syntax on this
-  path.
+  path. (Defensively, the HTML converter renders any stray `<@U...>` / `<#C...>` /
+  `<!here>` token as visible `@`/`#` text instead of raw `<@U...>` noise — but
+  it still won't notify anyone.)
 - **API/Webhook path (`send`):** use `<@U012AB3CD>` / `<#C012AB3CD>` / `<!here>`
   as-is. The converter preserves them and Slack resolves them server-side.
 

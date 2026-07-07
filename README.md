@@ -12,7 +12,7 @@ A Claude Code skill that formats messages for Slack with pixel-perfect accuracy.
 - Programmatic clipboard doesn't preserve tables in Slack. Manual browser copy does.
 - This skill gives you both paths: copy-paste for humans, webhook for bots.
 
-Zero dependencies. 172+ tests. Built for Claude Code.
+Zero dependencies. 195+ tests. Built for Claude Code.
 
 ![Demo](demo.gif)
 
@@ -129,6 +129,20 @@ echo '## Announcement' | node src/run.mjs preview
 |-------------|---------|-------------|
 | `SLACK_FORMATTER_PREVIEW_DIR` | `/tmp/slack-formatter` | Directory for preview HTML files |
 | `CCH_SLA_WEBHOOK` | (none) | Slack webhook URL for `send` command |
+| `JIRA_BASE_URL` | (none) | Jira site URL (e.g. `https://yoursite.atlassian.net`). When set, bare ticket keys like `ENG-12345` become clickable links on every output path |
+
+### Jira Auto-linking
+
+Set `JIRA_BASE_URL` and bare Jira keys are turned into links automatically:
+
+```bash
+export JIRA_BASE_URL=https://yoursite.atlassian.net
+echo 'Fixed DEVOPS-14389' | node src/run.mjs mrkdwn
+# → Fixed <https://yoursite.atlassian.net/browse/DEVOPS-14389|DEVOPS-14389>
+```
+
+Keys inside code spans, code blocks, existing links, or URLs are left alone,
+as are common acronyms that look like keys (`UTF-8`, `SHA-256`, `CVE-…`, etc.).
 
 ## How It Works
 
@@ -156,11 +170,10 @@ Through extensive testing, we discovered:
 ## Testing
 
 ```bash
-node test-skill.mjs                              # from repo root
-node skills/slack-message-formatter/test.mjs     # from skill dir
+node test-skill.mjs   # from repo root
 ```
 
-Comprehensive test suite with 172+ tests covering:
+Comprehensive test suite with 195+ tests covering:
 - Both HTML and mrkdwn output for every feature
 - Emoji shortcode conversion (85+ verified individually)
 - Nested formatting, edge cases, unclosed markers
