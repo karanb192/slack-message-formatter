@@ -7,7 +7,8 @@
  * Run: node test-skill.mjs
  */
 
-import { execSync } from "child_process";
+import { execSync, spawn } from "child_process";
+import { createServer } from "http";
 
 const RUN = "skills/slack-message-formatter/src/run.mjs";
 const RESET = "\x1b[0m";
@@ -86,13 +87,13 @@ function section(title) {
 
 section("HTML: Basic Formatting");
 
-test("Bold **", "html", "**hello**", "<b>hello</b><br><br>");
-test("Bold __", "html", "__hello__", "<b>hello</b><br><br>");
-test("Italic *", "html", "*hello*", "<i>hello</i><br><br>");
-test("Italic _", "html", "_hello_", "<i>hello</i><br><br>");
-test("Strikethrough", "html", "~~hello~~", "<s>hello</s><br><br>");
-test("Inline code", "html", "`code`", "<code>code</code><br><br>");
-test("Bold + Italic", "html", "***hello***", "<b><i>hello</i></b><br><br>");
+test("Bold **", "html", "**hello**", "<b>hello</b>");
+test("Bold __", "html", "__hello__", "<b>hello</b>");
+test("Italic *", "html", "*hello*", "<i>hello</i>");
+test("Italic _", "html", "_hello_", "<i>hello</i>");
+test("Strikethrough", "html", "~~hello~~", "<s>hello</s>");
+test("Inline code", "html", "`code`", "<code>code</code>");
+test("Bold + Italic", "html", "***hello***", "<b><i>hello</i></b>");
 
 testContains("Multiple formatting", "html",
   "**bold** and *italic* and ~~strike~~",
@@ -168,9 +169,9 @@ testContains("Blockquote with formatting", "html",
 
 section("HTML: Horizontal Rules");
 
-testContains("HR ---", "html", "---", ["<hr>"]);
-testContains("HR ***", "html", "***", ["<hr>"]);
-testContains("HR ___", "html", "___", ["<hr>"]);
+testContains("HR --- \u2192 unicode divider", "html", "---", ["\u2501\u2501\u2501\u2501\u2501"], ["<hr>"]);
+testContains("HR *** \u2192 unicode divider", "html", "***", ["\u2501\u2501\u2501\u2501\u2501"], ["<hr>"]);
+testContains("HR ___ \u2192 unicode divider", "html", "___", ["\u2501\u2501\u2501\u2501\u2501"], ["<hr>"]);
 
 section("HTML: Slack Tokens (rendered as visible text — they never resolve on paste)");
 
@@ -323,6 +324,66 @@ testContains("Ampersand in code not escaped", "mrkdwn",
   ["`a & b`"],
   ["`a &amp; b`"]);
 
+section("mrkdwn: Angle Bracket Escaping (API parses <...> as control tokens)");
+
+testContains("Literal HTML tag escaped", "mrkdwn",
+  "use the <div>hello</div> tag",
+  ["use the &lt;div&gt;hello&lt;/div&gt; tag"]);
+
+testContains("Comparison operators escaped", "mrkdwn",
+  "5 > 3 and 2 < 4",
+  ["5 &gt; 3 and 2 &lt; 4"]);
+
+testContains("Blockquote marker NOT escaped", "mrkdwn",
+  "> quote with <tag> inside",
+  ["> quote with &lt;tag&gt; inside"]);
+
+testContains("Angle brackets in inline code untouched", "mrkdwn",
+  "`a < b`",
+  ["`a < b`"], ["&lt;"]);
+
+testContains("Angle brackets in code block untouched", "mrkdwn",
+  "```\nif (a < b) {}\n```",
+  ["a < b"], ["&lt;"]);
+
+test("Raw autolink preserved", "mrkdwn",
+  "<https://example.com>",
+  "<https://example.com>");
+
+testContains("Autolink with label preserved", "mrkdwn",
+  "See <https://example.com|the docs>",
+  ["<https://example.com|the docs>"]);
+
+testContains("Subteam token preserved", "mrkdwn",
+  "cc <!subteam^S0123ABCD>",
+  ["<!subteam^S0123ABCD>"]);
+
+testContains("Mention with label preserved", "mrkdwn",
+  "Hey <@U012AB3CD|alice>",
+  ["<@U012AB3CD|alice>"]);
+
+section("mrkdwn: List Spacing (list attaches to its intro line)");
+
+test("Blank line before list collapsed", "mrkdwn",
+  "Intro line:\n\n- a\n- b",
+  "Intro line:\n• a\n• b");
+
+test("Blank line before task list collapsed", "mrkdwn",
+  "Status:\n\n- [x] done\n- [ ] pending",
+  "Status:\n:white_check_mark: done\n:black_square_button: pending");
+
+testContains("Blank line between two list groups kept", "mrkdwn",
+  "- a\n\n- [x] done",
+  ["• a\n\n:white_check_mark: done"]);
+
+testContains("Blank line after list kept", "mrkdwn",
+  "- a\n\n**Impact:** high",
+  ["• a\n\n*Impact:* high"]);
+
+testContains("Blank line after blockquote kept", "mrkdwn",
+  "> tip\n\n- a",
+  ["> tip\n\n• a"]);
+
 section("mrkdwn: Slack Tokens");
 
 testContains("User mention preserved", "mrkdwn",
@@ -357,6 +418,77 @@ testContains("Double-backtick code escaped once", "html",
   "Use `` <b>bold</b> `` here",
   ["<code>&lt;b&gt;bold&lt;/b&gt;</code>"],
   ["&amp;lt;"]);
+
+testContains("Pre-escaped &quot; not double-escaped", "html",
+  "say &quot;hi&quot; loudly",
+  ["&quot;hi&quot;"],
+  ["&amp;quot;"]);
+
+section("HTML: List Item Continuation Lines");
+
+// Continuation lines join with a space (Markdown soft-wrap) — a <br> inside
+// <li> makes Slack's paste handler flatten the entire list to paragraphs.
+testContains("Continuation line preserved in list item", "html",
+  "- First item\n  wraps to a second line\n- Second item",
+  ["<li>First item wraps to a second line</li>", "<li>Second item</li>"]);
+
+testContains("Multi-line continuation preserved", "html",
+  "- Item\n  line two\n  line three",
+  ["<li>Item line two line three</li>"]);
+
+section("HTML: List Item Space Protection (Slack paste trims spaces around inline tags)");
+
+testContains("Spaces around bold in list item become &#160;", "html",
+  "- **Impact:** high blast radius",
+  ["<li><b>Impact:</b>&#160;high blast radius</li>"]);
+
+testContains("Spaces around italic/code/link in list item protected", "html",
+  "- with *ital* and `code` and [docs](https://example.com) end",
+  ["with&#160;<i>ital</i>&#160;and&#160;<code>code</code>&#160;and&#160;<a href=\"https://example.com\">docs</a>&#160;end"]);
+
+testContains("Paragraph spaces NOT converted to &#160;", "html",
+  "with **bold** and *ital* end",
+  ["with <b>bold</b> and <i>ital</i> end"],
+  ["&#160;"]);
+
+section("HTML: Block Spacing (lists/code attach to intro; blank line elsewhere)");
+
+test("Single paragraph has no trailing breaks", "html",
+  "hello world", "hello world");
+
+testContains("Paragraphs separated by one blank line", "html",
+  "First para.\n\nSecond para.",
+  ["First para.<br><br>\nSecond para."]);
+
+testContains("Paragraph attaches to following list", "html",
+  "Intro line:\n\n- a\n- b",
+  ["Intro line:\n<ul>"],
+  ["Intro line:<br>"]);
+
+testContains("Heading attaches to following list", "html",
+  "## Changes\n\n- a",
+  ["<b>Changes</b>\n<ul>"],
+  ["<b>Changes</b><br>"]);
+
+testContains("Paragraph attaches to following code block", "html",
+  "Run this:\n\n```\nls\n```",
+  ["Run this:\n<pre><code>ls</code></pre>"]);
+
+testContains("Paragraph attaches to following task list", "html",
+  "Status:\n\n- [x] done",
+  ["Status:\n&#x2705; done"]);
+
+testContains("List followed by paragraph gets a blank line", "html",
+  "- a\n- b\n\n**Impact:** high",
+  ["</ul><br>\n<b>Impact:</b> high"]);
+
+testContains("Blockquote followed by paragraph gets a blank line", "html",
+  "> quoted tip\n\n**Impact:** high",
+  ["</blockquote><br>\n<b>Impact:</b> high"]);
+
+testContains("Bullet list and task list separated by a blank line", "html",
+  "- bullet\n\n- [x] done",
+  ["</ul><br>\n&#x2705; done"]);
 
 // =============================================================
 // JIRA AUTO-LINKING (JIRA_BASE_URL)
@@ -810,7 +942,7 @@ testContains("Blockquote with all formatting (mrkdwn)", "mrkdwn",
 
 section("HR Variants");
 
-testContains("HR with extra dashes (html)", "html", "------", ["<hr>"]);
+testContains("HR with extra dashes (html)", "html", "------", ["\u2501\u2501\u2501\u2501\u2501"], ["<hr>"]);
 testContains("HR with extra dashes (mrkdwn)", "mrkdwn", "------", ["━━━━━"]);
 
 testContains("HR ___ (mrkdwn)", "mrkdwn", "___", ["━━━━━"]);
@@ -1005,7 +1137,7 @@ testContains("Sprint summary (html)", "html", sprintMd, [
   "<b>Highlights</b>",
   "Shipped user auth",
   "<b>critical</b>",
-  "<hr>",
+  "\u2501\u2501\u2501\u2501\u2501",
   "<blockquote>",
   "Great work team!",
   "🎉",
@@ -1048,7 +1180,7 @@ section("UNDERSCORE ITALIC EDGE CASES");
 
 test("snake_case not italic", "html",
   "some_variable_name",
-  "some_variable_name<br><br>");
+  "some_variable_name");
 
 test("snake_case not italic (mrkdwn passthrough)", "mrkdwn",
   "some_variable_name",
@@ -1056,19 +1188,86 @@ test("snake_case not italic (mrkdwn passthrough)", "mrkdwn",
 
 test("Intentional _italic_ still works", "html",
   "_this is italic_",
-  "<i>this is italic</i><br><br>");
+  "<i>this is italic</i>");
 
 test("Mixed: italic + snake_case", "html",
   "use _caution_ with snake_case_names",
-  "use <i>caution</i> with snake_case_names<br><br>");
+  "use <i>caution</i> with snake_case_names");
 
 test("Multiple underscores: a_b_c_d", "html",
   "a_b_c_d",
-  "a_b_c_d<br><br>");
+  "a_b_c_d");
 
 test("file_path/to_something", "html",
   "Edit file_path/to_something",
-  "Edit file_path/to_something<br><br>");
+  "Edit file_path/to_something");
+
+// =============================================================
+// SEND COMMAND — real HTTP round-trip against a local server
+// =============================================================
+
+section("send: webhook delivery & error reporting");
+
+function check(name, cond, detail = "") {
+  if (cond) {
+    pass++;
+    console.log(`${GREEN}  PASS${RESET} [send] ${name}`);
+  } else {
+    fail++;
+    console.log(`${RED}  FAIL${RESET} [send] ${name}`);
+    if (detail) console.log(`${RED}       ${detail.slice(0, 300)}${RESET}`);
+  }
+}
+
+const received = [];
+const server = createServer((req, res) => {
+  let body = "";
+  req.on("data", (c) => (body += c));
+  req.on("end", () => {
+    received.push({ url: req.url, body });
+    if (req.url === "/ok") { res.writeHead(200); res.end("ok"); }
+    else { res.writeHead(404); res.end("no_service"); }
+  });
+});
+await new Promise((r) => server.listen(0, "127.0.0.1", r));
+const PORT = server.address().port;
+
+function runSend(input, env) {
+  return new Promise((resolve) => {
+    // Blank out ambient webhook vars so tests are hermetic
+    const child = spawn("node", [RUN, "send"], {
+      env: { ...process.env, SLACK_WEBHOOK_URL: "", CCH_SLA_WEBHOOK: "", ...env },
+    });
+    let out = "", err = "";
+    child.stdout.on("data", (d) => (out += d));
+    child.stderr.on("data", (d) => (err += d));
+    child.on("close", (code) => resolve({ code, out: out.trim(), err: err.trim() }));
+    child.stdin.write(input);
+    child.stdin.end();
+  });
+}
+
+let r = await runSend("**hello** <div>", { SLACK_WEBHOOK_URL: `http://127.0.0.1:${PORT}/ok` });
+check("succeeds on HTTP 200", r.code === 0 && r.out.includes("sent"), JSON.stringify(r));
+check("posts converted mrkdwn payload",
+  received.some((x) => x.url === "/ok" && x.body === JSON.stringify({ text: "*hello* &lt;div&gt;" })),
+  JSON.stringify(received));
+
+r = await runSend("**hello**", { SLACK_WEBHOOK_URL: `http://127.0.0.1:${PORT}/bad` });
+check("fails on HTTP 404 with status and body in error",
+  r.code === 1 && r.err.includes("404") && r.err.includes("no_service"), JSON.stringify(r));
+
+r = await runSend("**hello**", { CCH_SLA_WEBHOOK: `http://127.0.0.1:${PORT}/ok` });
+check("legacy CCH_SLA_WEBHOOK still honored", r.code === 0 && r.out.includes("sent"), JSON.stringify(r));
+
+r = await runSend("**hello**", { SLACK_WEBHOOK_URL: `http://127.0.0.1:9/nope` });
+check("fails on connection error", r.code === 1 && r.err.includes("Failed to send"), JSON.stringify(r));
+
+r = await runSend("**hello**", {});
+check("fails with clear error when no webhook configured",
+  r.code === 1 && r.err.includes("SLACK_WEBHOOK_URL"), JSON.stringify(r));
+
+server.close();
 
 // =============================================================
 // SUMMARY

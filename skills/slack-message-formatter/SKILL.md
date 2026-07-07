@@ -53,25 +53,20 @@ MARKDOWN
 This will:
 - Convert Markdown → Rich HTML (for copy-paste)
 - Convert Markdown → Slack mrkdwn (for API)
-- Write a Slack-themed preview page to `/tmp/slack-formatter/`
-- Open the preview in the user's browser
-- Copy the rich HTML to the system clipboard (if enabled)
-- Print the file path for future reference
+- Write a copy page + Slack-themed preview page to `/tmp/slack-formatter/`
+- Open the copy page in the user's browser
+- Print both file paths for future reference
+
+Note: the script does NOT touch the clipboard — programmatic clipboard writes
+don't survive Slack's paste handler. The user copies manually from the browser.
 
 ### Step 3: Report to user
 
 Tell the user:
 ```
-✅ Copied to clipboard + preview opened.
+✅ Copy page opened in your browser.
+   Select all (Cmd+A), copy (Cmd+C), then paste in Slack (Cmd+V).
    Preview: /tmp/slack-formatter/preview-2026-03-18-141532.html
-   Paste in Slack with Cmd+V.
-```
-
-If clipboard was disabled or failed:
-```
-✅ Preview opened.
-   Preview: /tmp/slack-formatter/preview-2026-03-18-141532.html
-   Copy from the browser page, then paste in Slack.
 ```
 
 ## Sending via Webhook (API path)
@@ -84,7 +79,9 @@ node skills/slack-message-formatter/src/run.mjs send <<'MARKDOWN'
 MARKDOWN
 ```
 
-This uses the `CCH_SLA_WEBHOOK` environment variable (or any webhook URL the user provides). The message is converted to mrkdwn format and sent via `curl`.
+This uses the `SLACK_WEBHOOK_URL` environment variable (`CCH_SLA_WEBHOOK` is
+still honored for back-compat). The message is converted to mrkdwn format and
+POSTed to the webhook; HTTP errors from Slack are reported with status and body.
 
 ## Slack mrkdwn Reference
 
@@ -109,9 +106,8 @@ Slack uses **mrkdwn** (not Markdown). Key differences:
 
 | Env Variable | Default | Description |
 |-------------|---------|-------------|
-| `SLACK_FORMATTER_CLIPBOARD` | `true` | Set to `false` to disable auto-clipboard copy |
-| `SLACK_FORMATTER_PREVIEW_DIR` | `/tmp/slack-formatter` | Directory for preview HTML files |
-| `CCH_SLA_WEBHOOK` | (none) | Slack webhook URL for sending messages |
+| `SLACK_FORMATTER_PREVIEW_DIR` | `/tmp/slack-formatter` | Directory for preview HTML files (pruned after 7 days) |
+| `SLACK_WEBHOOK_URL` | (none) | Slack webhook URL for sending messages (`CCH_SLA_WEBHOOK` also honored) |
 | `JIRA_BASE_URL` | (none) | Jira site URL (e.g. `https://yoursite.atlassian.net`). When set, bare ticket keys like `ENG-12345` are auto-linked to `$JIRA_BASE_URL/browse/ENG-12345` on every output path. Keys inside code, existing links, or URLs are left alone. |
 
 ## Content Guidelines
@@ -131,6 +127,10 @@ must be super concise and structured — never paragraphs of prose.**
 - **Cut ruthlessly.** No preamble ("I wanted to share…", "Quick update on…"),
   no filler ("as you may know", "just", "basically"), no restating the
   headline in the context line, no sign-offs. Lead with the point.
+- **NEVER use em dashes (—).** They scream AI-generated. Use a comma, a
+  period, a colon, or parentheses instead. This applies to every sentence,
+  including headlines and bullets. Plain hyphens in ranges (`12:30-2:00 PM`)
+  and compound words are fine.
 - **Always hyperlink ticket IDs and PR references.** Never write bare `ENG-12345`
   or `#123` — always use `[ENG-12345](https://yoursite.atlassian.net/browse/ENG-12345)`
   or `[PR #123](url)`. This applies to every occurrence, not just the first.
