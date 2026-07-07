@@ -12,7 +12,7 @@ A Claude Code skill that formats messages for Slack with pixel-perfect accuracy.
 - Programmatic clipboard doesn't preserve tables in Slack. Manual browser copy does.
 - This skill gives you both paths: copy-paste for humans, webhook for bots.
 
-Zero dependencies. 195+ tests. Built for Claude Code.
+Zero dependencies. 218+ tests. Built for Claude Code.
 
 ![Demo](demo.gif)
 
@@ -96,7 +96,8 @@ echo '## Announcement' | node src/run.mjs preview
   ```bash
   echo '**hello**' | node src/run.mjs send
   ```
-- Requires `CCH_SLA_WEBHOOK` environment variable
+- Requires `SLACK_WEBHOOK_URL` environment variable (`CCH_SLA_WEBHOOK` also works)
+- HTTP errors from Slack are reported with status and response body
 
 ### Conversion Reference
 
@@ -127,8 +128,8 @@ echo '## Announcement' | node src/run.mjs preview
 
 | Env Variable | Default | Description |
 |-------------|---------|-------------|
-| `SLACK_FORMATTER_PREVIEW_DIR` | `/tmp/slack-formatter` | Directory for preview HTML files |
-| `CCH_SLA_WEBHOOK` | (none) | Slack webhook URL for `send` command |
+| `SLACK_FORMATTER_PREVIEW_DIR` | `/tmp/slack-formatter` | Directory for preview HTML files (pruned after 7 days) |
+| `SLACK_WEBHOOK_URL` | (none) | Slack webhook URL for `send` command (`CCH_SLA_WEBHOOK` also honored for back-compat) |
 | `JIRA_BASE_URL` | (none) | Jira site URL (e.g. `https://yoursite.atlassian.net`). When set, bare ticket keys like `ENG-12345` become clickable links on every output path |
 
 ### Jira Auto-linking
@@ -165,6 +166,8 @@ Through extensive testing, we discovered:
 - **Programmatic clipboard** (Clipboard API, `execCommand`, `osascript`) **does not reliably preserve formatting** when pasting into Slack
 - **Manual browser copy** (`Cmd+A`, `Cmd+C` from a rendered HTML page) **works perfectly** for all formatting including tables
 - **HTML tables break** in Slack paste when mixed with other rich content (bold, lists, blockquotes) — even with manual copy. Tables must be code blocks.
+- **Slack's paste handler trims spaces around inline formatting inside list items** — `<li>with <b>bold</b> and</li>` pastes as "withboldand". The converter emits `&#160;` around inline tags in list items; Slack normalizes it back to a regular space.
+- **A `<br>` inside `<li>` makes Slack flatten the whole list** to plain paragraphs. Multi-line list items are joined with spaces (Markdown soft-wrap semantics) so lists stay native.
 - **150+ emoji shortcodes** (`:tada:`, `:rocket:`, etc.) are converted to Unicode for browser preview
 
 ## Testing
@@ -173,7 +176,7 @@ Through extensive testing, we discovered:
 node test-skill.mjs   # from repo root
 ```
 
-Comprehensive test suite with 195+ tests covering:
+Comprehensive test suite with 218+ tests covering:
 - Both HTML and mrkdwn output for every feature
 - Emoji shortcode conversion (85+ verified individually)
 - Nested formatting, edge cases, unclosed markers

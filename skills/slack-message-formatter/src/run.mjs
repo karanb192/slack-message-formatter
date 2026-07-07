@@ -13,9 +13,9 @@
 // Since this is a skill bundled as plain JS (not a compiled TS project),
 // we inline the converters here for zero-dependency operation.
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from "fs";
+import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, statSync, unlinkSync } from "fs";
 import { join } from "path";
-import { exec, execSync } from "child_process";
+import { exec } from "child_process";
 import { platform, tmpdir } from "os";
 
 // =============================================================
@@ -24,7 +24,8 @@ import { platform, tmpdir } from "os";
 
 function readStdin() {
   try {
-    return readFileSync("/dev/stdin", "utf-8");
+    // fd 0 instead of /dev/stdin — works on Windows too
+    return readFileSync(0, "utf-8");
   } catch {
     return "";
   }
@@ -191,6 +192,16 @@ function parseTableAlign(line) {
   });
 }
 
+// Slack's paste handler trims the whitespace-only spans that Chromium's copy
+// serializer emits around inline elements inside <li> — "with <b>bold</b> and"
+// pastes as "withboldand". A &#160; survives the transform and Slack
+// normalizes it back to a regular space in the composer.
+function protectListItemSpaces(html) {
+  return html
+    .replace(/ (<(?:b|i|s|code|a)\b)/g, "&#160;$1")
+    .replace(/(<\/(?:b|i|s|code|a)>) /g, "$1&#160;");
+}
+
 function parseHTMLList(lines, startIdx, ordered) {
   const marker = ordered ? /^\s*\d+[.)]\s+/ : /^\s*[-*+]\s+/;
   const tag = ordered ? "ol" : "ul";
@@ -230,9 +241,14 @@ function parseHTMLList(lines, startIdx, ordered) {
     if (subLines.length > 0 && subLines.some(l => l.match(/^\s+[-*+]\s+/) || l.match(/^\s+\d+[.)]\s+/))) {
       const subOrdered = subLines.some(l => l.match(/^\s+\d+[.)]\s+/));
       const dedented = subLines.map(l => l.replace(/^\s{2,4}/, ""));
-      html += `<li>${inlineToHTML(content)}\n${parseHTMLList(dedented, 0, subOrdered)}</li>\n`;
+      html += `<li>${protectListItemSpaces(inlineToHTML(content))}\n${parseHTMLList(dedented, 0, subOrdered)}</li>\n`;
     } else {
-      html += `<li>${inlineToHTML(content)}</li>\n`;
+      // Plain continuation lines belong to this item — dropping them loses
+      // content. Join with a space (Markdown soft-wrap semantics): a <br>
+      // inside <li> makes Slack flatten the whole list to plain paragraphs.
+      const extra = subLines.map(l => l.trim()).filter(Boolean);
+      if (extra.length) content += " " + extra.join(" ");
+      html += `<li>${protectListItemSpaces(inlineToHTML(content))}</li>\n`;
     }
   }
 
@@ -290,7 +306,7 @@ function inlineToHTML(text) {
   text = text.replace(/<!--[\s\S]*?-->/g, "");
 
   // Escape HTML
-  text = text.replace(/&(?!amp;|lt;|gt;|#x[0-9a-f]+;|#\d+;)/gi, "&amp;");
+  text = text.replace(/&(?!amp;|lt;|gt;|quot;|apos;|nbsp;|#x[0-9a-f]+;|#\d+;)/gi, "&amp;");
   text = text.replace(/</g, "&lt;");
   text = text.replace(/>/g, "&gt;");
 
@@ -388,6 +404,23 @@ function convertToMrkdwn(md) {
   // HTML comments
   result = result.replace(/<!--[\s\S]*?-->/g, "");
 
+  // Slack's API parses <...> as control sequences (mentions, links, dates),
+  // so literal < and > in text must be escaped — but intentional Slack tokens
+  // (<@U...>, <#C...>, <!here>, <!subteam^...>) and raw <url> autolinks must
+  // pass through untouched. Protect tokens, escape the rest, then restore.
+  const slackTokens = [];
+  result = result.replace(
+    /<(?:[@#][A-Z0-9]+(?:\|[^>\n]+)?|!(?:here|channel|everyone)|!(?:subteam\^|date\^)[^>\n]+|(?:https?|mailto):[^>\s]+(?:\|[^>\n]+)?)>/g,
+    (m) => {
+      const idx = slackTokens.length;
+      slackTokens.push(m);
+      return `\x00ST${idx}\x00`;
+    }
+  );
+  result = result.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  // Un-escape blockquote markers at line start — that > is mrkdwn syntax
+  result = result.replace(/^(\s*)&gt;(\s?)/gm, "$1>$2");
+
   // Headings → bold (use placeholder to avoid italic regex matching)
   result = result.replace(/^#{1,6}\s+(.+?)(?:\s+#+)?$/gm, "\x01$1\x01");
 
@@ -431,6 +464,11 @@ function convertToMrkdwn(md) {
 
   // Escape &
   result = result.replace(/&(?!amp;|lt;|gt;)/g, "&amp;");
+
+  // Restore Slack tokens
+  slackTokens.forEach((token, idx) => {
+    result = result.replace(`\x00ST${idx}\x00`, token);
+  });
 
   // Restore inline codes
   inlineCodes.forEach((code, idx) => {
@@ -597,13 +635,23 @@ function showToast(m){const t=document.getElementById('toast');t.textContent=m;t
 // Send via webhook
 // =============================================================
 
-function sendWebhook(mrkdwn, webhookUrl) {
-  const payload = JSON.stringify({ text: mrkdwn });
+// Uses fetch instead of shelling out to curl: curl without --fail exits 0 on
+// HTTP 4xx/5xx, so failures used to be reported as success — and interpolating
+// the payload into a shell string was an injection hazard.
+async function sendWebhook(mrkdwn, webhookUrl) {
   try {
-    execSync(`curl -s -X POST "${webhookUrl}" -H 'Content-type: application/json' -d '${payload.replace(/'/g, "'\\''")}' `, { stdio: "pipe" });
-    return true;
-  } catch {
-    return false;
+    const res = await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: mrkdwn }),
+    });
+    if (!res.ok) {
+      const body = (await res.text()).slice(0, 200);
+      return { ok: false, error: `HTTP ${res.status}${body ? `: ${body}` : ""}` };
+    }
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e.cause?.message || e.message };
   }
 }
 
@@ -632,6 +680,16 @@ switch (command) {
   case "preview": {
     if (!existsSync(PREVIEW_DIR)) mkdirSync(PREVIEW_DIR, { recursive: true });
 
+    // Prune previews older than 7 days — nothing ever cleaned this dir up
+    const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+    for (const f of readdirSync(PREVIEW_DIR)) {
+      if (!/^(copy|preview)-.*\.html$/.test(f)) continue;
+      const p = join(PREVIEW_DIR, f);
+      try {
+        if (Date.now() - statSync(p).mtimeMs > MAX_AGE_MS) unlinkSync(p);
+      } catch {}
+    }
+
     const ts = new Date().toISOString().replace(/T/, "-").replace(/:/g, "").slice(0, 15);
     const copyPath = join(PREVIEW_DIR, `copy-${ts}.html`);
     const previewPath = join(PREVIEW_DIR, `preview-${ts}.html`);
@@ -642,8 +700,9 @@ switch (command) {
     // Generate dark preview page (links to copy page)
     writeFileSync(previewPath, generatePreviewPage(markdown, copyPath), "utf-8");
 
-    // Open the COPY page directly — user selects content, Cmd+C, paste in Slack
-    const openCmd = platform() === "darwin" ? "open" : platform() === "linux" ? "xdg-open" : "start";
+    // Open the COPY page directly — user selects content, Cmd+C, paste in Slack.
+    // Windows `start` treats the first quoted arg as a window title, hence "".
+    const openCmd = platform() === "darwin" ? "open" : platform() === "linux" ? "xdg-open" : 'start ""';
     exec(`${openCmd} "${copyPath}"`);
 
     console.log(`✅ Copy page opened in browser.`);
@@ -654,17 +713,18 @@ switch (command) {
   }
 
   case "send": {
-    const webhook = process.env.CCH_SLA_WEBHOOK;
+    // SLACK_WEBHOOK_URL is the documented name; CCH_SLA_WEBHOOK kept for back-compat
+    const webhook = process.env.SLACK_WEBHOOK_URL || process.env.CCH_SLA_WEBHOOK;
     if (!webhook) {
-      console.error("Error: CCH_SLA_WEBHOOK environment variable not set.");
+      console.error("Error: SLACK_WEBHOOK_URL environment variable not set.");
       process.exit(1);
     }
     const mrkdwn = convertToMrkdwn(markdown);
-    const ok = sendWebhook(mrkdwn, webhook);
-    if (ok) {
+    const result = await sendWebhook(mrkdwn, webhook);
+    if (result.ok) {
       console.log("✅ Message sent to Slack.");
     } else {
-      console.error("❌ Failed to send message.");
+      console.error(`❌ Failed to send message: ${result.error}`);
       process.exit(1);
     }
     break;

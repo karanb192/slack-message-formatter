@@ -7,7 +7,8 @@
  * Run: node test-skill.mjs
  */
 
-import { execSync } from "child_process";
+import { execSync, spawn } from "child_process";
+import { createServer } from "http";
 
 const RUN = "skills/slack-message-formatter/src/run.mjs";
 const RESET = "\x1b[0m";
@@ -323,6 +324,44 @@ testContains("Ampersand in code not escaped", "mrkdwn",
   ["`a & b`"],
   ["`a &amp; b`"]);
 
+section("mrkdwn: Angle Bracket Escaping (API parses <...> as control tokens)");
+
+testContains("Literal HTML tag escaped", "mrkdwn",
+  "use the <div>hello</div> tag",
+  ["use the &lt;div&gt;hello&lt;/div&gt; tag"]);
+
+testContains("Comparison operators escaped", "mrkdwn",
+  "5 > 3 and 2 < 4",
+  ["5 &gt; 3 and 2 &lt; 4"]);
+
+testContains("Blockquote marker NOT escaped", "mrkdwn",
+  "> quote with <tag> inside",
+  ["> quote with &lt;tag&gt; inside"]);
+
+testContains("Angle brackets in inline code untouched", "mrkdwn",
+  "`a < b`",
+  ["`a < b`"], ["&lt;"]);
+
+testContains("Angle brackets in code block untouched", "mrkdwn",
+  "```\nif (a < b) {}\n```",
+  ["a < b"], ["&lt;"]);
+
+test("Raw autolink preserved", "mrkdwn",
+  "<https://example.com>",
+  "<https://example.com>");
+
+testContains("Autolink with label preserved", "mrkdwn",
+  "See <https://example.com|the docs>",
+  ["<https://example.com|the docs>"]);
+
+testContains("Subteam token preserved", "mrkdwn",
+  "cc <!subteam^S0123ABCD>",
+  ["<!subteam^S0123ABCD>"]);
+
+testContains("Mention with label preserved", "mrkdwn",
+  "Hey <@U012AB3CD|alice>",
+  ["<@U012AB3CD|alice>"]);
+
 section("mrkdwn: Slack Tokens");
 
 testContains("User mention preserved", "mrkdwn",
@@ -357,6 +396,38 @@ testContains("Double-backtick code escaped once", "html",
   "Use `` <b>bold</b> `` here",
   ["<code>&lt;b&gt;bold&lt;/b&gt;</code>"],
   ["&amp;lt;"]);
+
+testContains("Pre-escaped &quot; not double-escaped", "html",
+  "say &quot;hi&quot; loudly",
+  ["&quot;hi&quot;"],
+  ["&amp;quot;"]);
+
+section("HTML: List Item Continuation Lines");
+
+// Continuation lines join with a space (Markdown soft-wrap) — a <br> inside
+// <li> makes Slack's paste handler flatten the entire list to paragraphs.
+testContains("Continuation line preserved in list item", "html",
+  "- First item\n  wraps to a second line\n- Second item",
+  ["<li>First item wraps to a second line</li>", "<li>Second item</li>"]);
+
+testContains("Multi-line continuation preserved", "html",
+  "- Item\n  line two\n  line three",
+  ["<li>Item line two line three</li>"]);
+
+section("HTML: List Item Space Protection (Slack paste trims spaces around inline tags)");
+
+testContains("Spaces around bold in list item become &#160;", "html",
+  "- **Impact:** high blast radius",
+  ["<li><b>Impact:</b>&#160;high blast radius</li>"]);
+
+testContains("Spaces around italic/code/link in list item protected", "html",
+  "- with *ital* and `code` and [docs](https://example.com) end",
+  ["with&#160;<i>ital</i>&#160;and&#160;<code>code</code>&#160;and&#160;<a href=\"https://example.com\">docs</a>&#160;end"]);
+
+testContains("Paragraph spaces NOT converted to &#160;", "html",
+  "with **bold** and *ital* end",
+  ["with <b>bold</b> and <i>ital</i> end"],
+  ["&#160;"]);
 
 // =============================================================
 // JIRA AUTO-LINKING (JIRA_BASE_URL)
@@ -1069,6 +1140,73 @@ test("Multiple underscores: a_b_c_d", "html",
 test("file_path/to_something", "html",
   "Edit file_path/to_something",
   "Edit file_path/to_something<br><br>");
+
+// =============================================================
+// SEND COMMAND — real HTTP round-trip against a local server
+// =============================================================
+
+section("send: webhook delivery & error reporting");
+
+function check(name, cond, detail = "") {
+  if (cond) {
+    pass++;
+    console.log(`${GREEN}  PASS${RESET} [send] ${name}`);
+  } else {
+    fail++;
+    console.log(`${RED}  FAIL${RESET} [send] ${name}`);
+    if (detail) console.log(`${RED}       ${detail.slice(0, 300)}${RESET}`);
+  }
+}
+
+const received = [];
+const server = createServer((req, res) => {
+  let body = "";
+  req.on("data", (c) => (body += c));
+  req.on("end", () => {
+    received.push({ url: req.url, body });
+    if (req.url === "/ok") { res.writeHead(200); res.end("ok"); }
+    else { res.writeHead(404); res.end("no_service"); }
+  });
+});
+await new Promise((r) => server.listen(0, "127.0.0.1", r));
+const PORT = server.address().port;
+
+function runSend(input, env) {
+  return new Promise((resolve) => {
+    // Blank out ambient webhook vars so tests are hermetic
+    const child = spawn("node", [RUN, "send"], {
+      env: { ...process.env, SLACK_WEBHOOK_URL: "", CCH_SLA_WEBHOOK: "", ...env },
+    });
+    let out = "", err = "";
+    child.stdout.on("data", (d) => (out += d));
+    child.stderr.on("data", (d) => (err += d));
+    child.on("close", (code) => resolve({ code, out: out.trim(), err: err.trim() }));
+    child.stdin.write(input);
+    child.stdin.end();
+  });
+}
+
+let r = await runSend("**hello** <div>", { SLACK_WEBHOOK_URL: `http://127.0.0.1:${PORT}/ok` });
+check("succeeds on HTTP 200", r.code === 0 && r.out.includes("sent"), JSON.stringify(r));
+check("posts converted mrkdwn payload",
+  received.some((x) => x.url === "/ok" && x.body === JSON.stringify({ text: "*hello* &lt;div&gt;" })),
+  JSON.stringify(received));
+
+r = await runSend("**hello**", { SLACK_WEBHOOK_URL: `http://127.0.0.1:${PORT}/bad` });
+check("fails on HTTP 404 with status and body in error",
+  r.code === 1 && r.err.includes("404") && r.err.includes("no_service"), JSON.stringify(r));
+
+r = await runSend("**hello**", { CCH_SLA_WEBHOOK: `http://127.0.0.1:${PORT}/ok` });
+check("legacy CCH_SLA_WEBHOOK still honored", r.code === 0 && r.out.includes("sent"), JSON.stringify(r));
+
+r = await runSend("**hello**", { SLACK_WEBHOOK_URL: `http://127.0.0.1:9/nope` });
+check("fails on connection error", r.code === 1 && r.err.includes("Failed to send"), JSON.stringify(r));
+
+r = await runSend("**hello**", {});
+check("fails with clear error when no webhook configured",
+  r.code === 1 && r.err.includes("SLACK_WEBHOOK_URL"), JSON.stringify(r));
+
+server.close();
 
 // =============================================================
 // SUMMARY
