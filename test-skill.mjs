@@ -169,9 +169,9 @@ testContains("Blockquote with formatting", "html",
 
 section("HTML: Horizontal Rules");
 
-testContains("HR ---", "html", "---", ["<hr>"]);
-testContains("HR ***", "html", "***", ["<hr>"]);
-testContains("HR ___", "html", "___", ["<hr>"]);
+testContains("HR --- \u2192 unicode divider", "html", "---", ["\u2501\u2501\u2501\u2501\u2501"], ["<hr>"]);
+testContains("HR *** \u2192 unicode divider", "html", "***", ["\u2501\u2501\u2501\u2501\u2501"], ["<hr>"]);
+testContains("HR ___ \u2192 unicode divider", "html", "___", ["\u2501\u2501\u2501\u2501\u2501"], ["<hr>"]);
 
 section("HTML: Slack Tokens (rendered as visible text — they never resolve on paste)");
 
@@ -942,7 +942,7 @@ testContains("Blockquote with all formatting (mrkdwn)", "mrkdwn",
 
 section("HR Variants");
 
-testContains("HR with extra dashes (html)", "html", "------", ["<hr>"]);
+testContains("HR with extra dashes (html)", "html", "------", ["\u2501\u2501\u2501\u2501\u2501"], ["<hr>"]);
 testContains("HR with extra dashes (mrkdwn)", "mrkdwn", "------", ["━━━━━"]);
 
 testContains("HR ___ (mrkdwn)", "mrkdwn", "___", ["━━━━━"]);
@@ -1137,7 +1137,7 @@ testContains("Sprint summary (html)", "html", sprintMd, [
   "<b>Highlights</b>",
   "Shipped user auth",
   "<b>critical</b>",
-  "<hr>",
+  "\u2501\u2501\u2501\u2501\u2501",
   "<blockquote>",
   "Great work team!",
   "🎉",

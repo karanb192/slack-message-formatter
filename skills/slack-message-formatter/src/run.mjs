@@ -79,7 +79,9 @@ function convertToHTML(md) {
 
     // HR
     if (line.match(/^(?:---+|\*\*\*+|___+)\s*$/)) {
-      blocks.push(["block", "<hr>"]);
+      // Same unicode divider as the mrkdwn path — a real <hr> does not
+      // survive Slack's paste handler (it turns into stray empty lines)
+      blocks.push(["text", "━".repeat(30)]);
       i++;
       continue;
     }
