@@ -19,10 +19,13 @@ const BOLD = "\x1b[1m";
 let pass = 0;
 let fail = 0;
 
-function run(cmd, input) {
+function run(cmd, input, env = {}) {
   try {
     // Use heredoc to avoid shell interpretation of backticks, <, >, etc.
-    const shellCmd = `node ${RUN} ${cmd} <<'TESTEOF'\n${input}\nTESTEOF`;
+    const envPrefix = Object.entries(env)
+      .map(([k, v]) => `${k}='${v}'`)
+      .join(" ");
+    const shellCmd = `${envPrefix} node ${RUN} ${cmd} <<'TESTEOF'\n${input}\nTESTEOF`;
     return execSync(shellCmd, {
       encoding: "utf-8",
       stdio: ["pipe", "pipe", "pipe"],
@@ -33,8 +36,8 @@ function run(cmd, input) {
   }
 }
 
-function test(name, cmd, input, expected) {
-  const actual = run(cmd, input);
+function test(name, cmd, input, expected, env = {}) {
+  const actual = run(cmd, input, env);
   // Normalize whitespace for comparison
   const normActual = actual.replace(/\s+/g, " ").trim();
   const normExpected = expected.replace(/\s+/g, " ").trim();
@@ -50,8 +53,8 @@ function test(name, cmd, input, expected) {
   }
 }
 
-function testContains(name, cmd, input, mustContain, mustNotContain = []) {
-  const actual = run(cmd, input);
+function testContains(name, cmd, input, mustContain, mustNotContain = [], env = {}) {
+  const actual = run(cmd, input, env);
   const missing = mustContain.filter((s) => !actual.includes(s));
   const unwanted = mustNotContain.filter((s) => actual.includes(s));
 
@@ -169,19 +172,39 @@ testContains("HR ---", "html", "---", ["<hr>"]);
 testContains("HR ***", "html", "***", ["<hr>"]);
 testContains("HR ___", "html", "___", ["<hr>"]);
 
-section("HTML: Slack Tokens");
+section("HTML: Slack Tokens (rendered as visible text — they never resolve on paste)");
 
-testContains("User mention preserved", "html",
+testContains("User mention rendered as @ID", "html",
   "Hey <@U012AB3CD>",
-  ["&lt;@U012AB3CD&gt;"]);
+  ["@U012AB3CD"], ["&lt;@U012AB3CD&gt;"]);
 
-testContains("Channel link preserved", "html",
+testContains("User mention with label rendered as @label", "html",
+  "Hey <@U012AB3CD|alice>",
+  ["@alice"], ["&lt;@", "U012AB3CD"]);
+
+testContains("Channel link rendered as #ID", "html",
   "See <#C012AB3CD>",
-  ["&lt;#C012AB3CD&gt;"]);
+  ["#C012AB3CD"], ["&lt;#C012AB3CD&gt;"]);
 
-testContains("@here preserved", "html",
+testContains("Channel link with label rendered as #name", "html",
+  "See <#C012AB3CD|general>",
+  ["#general"], ["&lt;#", "C012AB3CD"]);
+
+testContains("@here rendered as text", "html",
   "Hey <!here>",
-  ["&lt;!here&gt;"]);
+  ["@here"], ["&lt;!here&gt;"]);
+
+testContains("@channel rendered as text", "html",
+  "Hey <!channel>",
+  ["@channel"], ["&lt;!channel&gt;"]);
+
+testContains("Unknown <!...> token left escaped", "html",
+  "See <!date^123^{date}>",
+  ["&lt;!date^123^{date}&gt;"]);
+
+testContains("Mention inside inline code left literal", "html",
+  "Use `<@U012AB3CD>` for API messages",
+  ["<code>&lt;@U012AB3CD&gt;</code>"]);
 
 section("HTML: HTML Comments");
 
@@ -313,6 +336,114 @@ testContains("Channel link preserved", "mrkdwn",
 testContains("@here preserved", "mrkdwn",
   "Hey <!here>",
   ["<!here>"]);
+
+// =============================================================
+// INLINE CODE ESCAPING (double-escape regression)
+// =============================================================
+
+section("HTML: Inline Code Escaping");
+
+testContains("Angle brackets in inline code escaped once", "html",
+  "Fix the `<div>` tag",
+  ["<code>&lt;div&gt;</code>"],
+  ["&amp;lt;"]);
+
+testContains("Ampersand in inline code escaped once", "html",
+  "Run `a && b`",
+  ["<code>a &amp;&amp; b</code>"],
+  ["&amp;amp;"]);
+
+testContains("Double-backtick code escaped once", "html",
+  "Use `` <b>bold</b> `` here",
+  ["<code>&lt;b&gt;bold&lt;/b&gt;</code>"],
+  ["&amp;lt;"]);
+
+// =============================================================
+// JIRA AUTO-LINKING (JIRA_BASE_URL)
+// =============================================================
+
+section("Jira Auto-linking (JIRA_BASE_URL)");
+
+const JIRA_ENV = { JIRA_BASE_URL: "https://example.atlassian.net" };
+const JIRA_URL = "https://example.atlassian.net/browse";
+
+testContains("Bare key linked (html)", "html",
+  "Fix DEVOPS-14389 today",
+  [`<a href="${JIRA_URL}/DEVOPS-14389">DEVOPS-14389</a>`],
+  [], JIRA_ENV);
+
+test("Bare key linked (mrkdwn)", "mrkdwn",
+  "Fix DEVOPS-14389 today",
+  `Fix <${JIRA_URL}/DEVOPS-14389|DEVOPS-14389> today`,
+  JIRA_ENV);
+
+testContains("Multiple keys all linked", "mrkdwn",
+  "ENG-129313 blocks AT-813158",
+  [`<${JIRA_URL}/ENG-129313|ENG-129313>`, `<${JIRA_URL}/AT-813158|AT-813158>`],
+  [], JIRA_ENV);
+
+testContains("Key with punctuation after", "mrkdwn",
+  "Done: DEVOPS-14389.",
+  [`<${JIRA_URL}/DEVOPS-14389|DEVOPS-14389>.`],
+  [], JIRA_ENV);
+
+testContains("Key with underscore in project", "mrkdwn",
+  "See MY_PROJ-42",
+  [`<${JIRA_URL}/MY_PROJ-42|MY_PROJ-42>`],
+  [], JIRA_ENV);
+
+test("Already-linked key not double-linked", "mrkdwn",
+  "[DEVOPS-14389](https://other.example.com/DEVOPS-14389)",
+  "<https://other.example.com/DEVOPS-14389|DEVOPS-14389>",
+  JIRA_ENV);
+
+test("Key inside inline code not linked", "mrkdwn",
+  "Run `git checkout DEVOPS-14389`",
+  "Run `git checkout DEVOPS-14389`",
+  JIRA_ENV);
+
+testContains("Key inside code block not linked", "mrkdwn",
+  "```\nbranch: DEVOPS-14389\n```",
+  ["branch: DEVOPS-14389"],
+  [JIRA_URL], JIRA_ENV);
+
+testContains("Key inside bare URL not linked", "mrkdwn",
+  "See https://ci.example.com/job/DEVOPS-14389/logs",
+  ["https://ci.example.com/job/DEVOPS-14389/logs"],
+  [JIRA_URL], JIRA_ENV);
+
+test("Lowercase key not linked", "mrkdwn",
+  "see devops-14389", "see devops-14389", JIRA_ENV);
+
+test("Single-letter prefix not linked", "mrkdwn",
+  "item X-123 here", "item X-123 here", JIRA_ENV);
+
+test("Common acronyms not linked (UTF-8, SHA-256)", "mrkdwn",
+  "encode as UTF-8 with SHA-256",
+  "encode as UTF-8 with SHA-256",
+  JIRA_ENV);
+
+test("Version-like suffix not linked", "mrkdwn",
+  "see CVE-2024-12345", "see CVE-2024-12345", JIRA_ENV);
+
+test("No JIRA_BASE_URL → keys untouched", "mrkdwn",
+  "Fix DEVOPS-14389 today",
+  "Fix DEVOPS-14389 today");
+
+test("Trailing slash on base URL handled", "mrkdwn",
+  "Fix DEVOPS-14389",
+  `Fix <${JIRA_URL}/DEVOPS-14389|DEVOPS-14389>`,
+  { JIRA_BASE_URL: "https://example.atlassian.net/" });
+
+testContains("Key in heading linked (html)", "html",
+  "## DEVOPS-14389 rollout",
+  [`<a href="${JIRA_URL}/DEVOPS-14389">DEVOPS-14389</a>`],
+  [], JIRA_ENV);
+
+testContains("Key in list item linked (mrkdwn)", "mrkdwn",
+  "- Fixed ENG-129313\n- Testing AT-813158",
+  [`• Fixed <${JIRA_URL}/ENG-129313|ENG-129313>`, `• Testing <${JIRA_URL}/AT-813158|AT-813158>`],
+  [], JIRA_ENV);
 
 // =============================================================
 // COMPLEX / REAL-WORLD TESTS

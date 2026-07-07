@@ -294,9 +294,11 @@ function inlineToHTML(text) {
   text = text.replace(/</g, "&lt;");
   text = text.replace(/>/g, "&gt;");
 
-  // Inline code — extract first so emoji/formatting don't touch code content
-  text = text.replace(/``([^`]+)``/g, (_, c) => `<code>${escapeHtml(c.trim())}</code>`);
-  text = text.replace(/`([^`\n]+?)`/g, (_, c) => `<code>${escapeHtml(c)}</code>`);
+  // Inline code — extract first so emoji/formatting don't touch code content.
+  // Content is already HTML-escaped above; escaping again would render
+  // `<div>` as the literal text "&lt;div&gt;" in Slack.
+  text = text.replace(/``([^`]+)``/g, (_, c) => `<code>${c.trim()}</code>`);
+  text = text.replace(/`([^`\n]+?)`/g, (_, c) => `<code>${c}</code>`);
 
   // Convert emoji shortcodes to Unicode BEFORE italic processing
   // (shortcodes like :white_check_mark: have underscores that would trigger italic)
@@ -327,7 +329,19 @@ function inlineToHTML(text) {
   // Italic (_text_) — require word boundary so snake_case_names aren't mangled
   text = text.replace(/(?<![a-zA-Z0-9])_([^\s_](?:.*?[^\s_])?)_(?![a-zA-Z0-9])/gs, "<i>$1</i>");
 
-  // Slack tokens are already escaped as &lt;@U...&gt; etc. — that's correct for HTML display.
+  // Slack tokens (<@U...>, <#C...>, <!here>) only resolve via the API path —
+  // pasted HTML never becomes a real mention. Render them as visible @/# text
+  // so the paste doesn't contain raw <@U...> noise; the user still has to
+  // re-type the mention in Slack for it to notify anyone. Tokens inside
+  // inline code are left as-is.
+  text = text.replace(/(<code>[\s\S]*?<\/code>)|&lt;([@#!][^&\s]+)&gt;/g, (m, code, token) => {
+    if (code) return code;
+    const [id, label] = token.slice(1).split("|");
+    if (token.startsWith("@")) return `@${label || id}`;
+    if (token.startsWith("#")) return `#${label || id}`;
+    if (["here", "channel", "everyone"].includes(id)) return `@${id}`;
+    return m; // unknown <!...> token — leave escaped
+  });
 
   // Restore protected underscores in unknown emoji shortcodes
   text = text.replace(/\x02/g, "_");
@@ -429,6 +443,46 @@ function convertToMrkdwn(md) {
   });
 
   return result.trim();
+}
+
+// =============================================================
+// Jira key auto-linking (issue #10)
+// =============================================================
+
+// Common acronyms that match the Jira key pattern but are never tickets.
+const JIRA_KEY_DENYLIST = new Set([
+  "UTF", "SHA", "MD", "ISO", "RFC", "CVE", "AES", "RSA",
+  "TLS", "SSL", "HTTP", "HTTPS", "COVID", "IEEE", "ECMA",
+]);
+
+/**
+ * Turn bare Jira keys (DEVOPS-14389, ENG-129313) into Markdown links to
+ * `<baseUrl>/browse/<KEY>`. Runs on the raw Markdown before conversion, so
+ * both the HTML and mrkdwn paths get clickable links. Keys inside code
+ * spans/blocks, existing links, or URLs are left untouched.
+ */
+function autoLinkJiraKeys(md, baseUrl) {
+  const base = baseUrl.replace(/\/+$/, "");
+  const saved = [];
+  const save = (m) => {
+    saved.push(m);
+    return `\x00J${saved.length - 1}\x00`;
+  };
+
+  let result = md
+    // Code blocks and inline code
+    .replace(/```[\s\S]*?(?:```|$)|``[^`]+``|`[^`\n]+`/g, save)
+    // Existing Markdown links/images — don't double-link keys in text or URL
+    .replace(/!?\[[^\]]*\]\([^)]*\)/g, save)
+    // Bare URLs
+    .replace(/https?:\/\/[^\s<>)]+/g, save);
+
+  result = result.replace(/(?<![\w/-])([A-Z][A-Z0-9_]+-\d+)(?![\w-])/g, (m, key) => {
+    if (JIRA_KEY_DENYLIST.has(key.split("-")[0])) return m;
+    return `[${key}](${base}/browse/${key})`;
+  });
+
+  return result.replace(/\x00J(\d+)\x00/g, (_, i) => saved[+i]);
 }
 
 // =============================================================
@@ -558,7 +612,13 @@ function sendWebhook(mrkdwn, webhookUrl) {
 // =============================================================
 
 const command = process.argv[2] || "preview";
-const markdown = readStdin().trim();
+let markdown = readStdin().trim();
+
+// Opt-in Jira auto-linking: set JIRA_BASE_URL (e.g. https://yoursite.atlassian.net)
+// to turn bare ticket keys into clickable links on every output path.
+if (markdown && process.env.JIRA_BASE_URL) {
+  markdown = autoLinkJiraKeys(markdown, process.env.JIRA_BASE_URL);
+}
 
 if (!markdown) {
   console.error("Error: No input. Pipe Markdown via stdin.");
