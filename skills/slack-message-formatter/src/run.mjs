@@ -530,20 +530,27 @@ function convertToMrkdwn(md) {
   // Escape &
   result = result.replace(/&(?!amp;|lt;|gt;)/g, "&amp;");
 
-  // Restore Slack tokens
-  slackTokens.forEach((token, idx) => {
-    result = result.replace(`\x00ST${idx}\x00`, token);
-  });
-
-  // Restore inline codes
-  inlineCodes.forEach((code, idx) => {
-    result = result.replace(`\x00IC${idx}\x00`, code);
-  });
-
-  // Restore code blocks
-  codeBlocks.forEach((block, idx) => {
-    result = result.replace(`\x00CB${idx}\x00`, block);
-  });
+  // Saved entries nest in both directions — a table's code block embeds the
+  // inline-code placeholders of its cells, and an inline span can capture a
+  // fence's placeholder once the multi-line fence collapses to one line — so
+  // no single-pass order works. Restore in passes until no placeholder
+  // remains; each pass splices one nesting level in. The pass cap only guards
+  // against crafted NUL-byte lookalikes in the input cycling forever (real
+  // nesting is at most a few levels). Always replace via a function callback:
+  // bare string replacement would interpret $&, $', $1… inside restored code
+  // content as replacement patterns and corrupt it.
+  const PLACEHOLDER = /\x00(?:ST|CB|IC)\d+\x00/;
+  for (let passes = 0; passes < 8 && PLACEHOLDER.test(result); passes++) {
+    slackTokens.forEach((token, idx) => {
+      result = result.replace(`\x00ST${idx}\x00`, () => token);
+    });
+    codeBlocks.forEach((block, idx) => {
+      result = result.replace(`\x00CB${idx}\x00`, () => block);
+    });
+    inlineCodes.forEach((code, idx) => {
+      result = result.replace(`\x00IC${idx}\x00`, () => code);
+    });
+  }
 
   return result.trim();
 }
