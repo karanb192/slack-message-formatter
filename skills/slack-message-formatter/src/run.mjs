@@ -338,19 +338,35 @@ function inlineToHTML(text) {
   text = text.replace(/</g, "&lt;");
   text = text.replace(/>/g, "&gt;");
 
-  // Inline code — extract first so emoji/formatting don't touch code content.
-  // Content is already HTML-escaped above; escaping again would render
-  // `<div>` as the literal text "&lt;div&gt;" in Slack.
-  text = text.replace(/``([^`]+)``/g, (_, c) => `<code>${c.trim()}</code>`);
-  text = text.replace(/`([^`\n]+?)`/g, (_, c) => `<code>${c}</code>`);
+  // Inline code — extract to opaque placeholders first (same scheme as the
+  // mrkdwn path) so none of the emoji/link/bold/italic/token regexes below can
+  // touch code content. Replacing in place isn't enough: the italic regexes
+  // don't skip <code> tags, so a span like ` * ` would pair its asterisk with
+  // a later *italic* delimiter in the paragraph. Content is already
+  // HTML-escaped above; escaping again would render `<div>` as the literal
+  // text "&lt;div&gt;" in Slack. Both syntaxes trim inner padding — stray
+  // spaces inside the pill leak into the pasted Slack code span — but a
+  // whitespace-only span keeps its content instead of collapsing to an empty pill.
+  const codeSpans = [];
+  // ?? m: defensive — sentinel bytes are stripped from input in main, but an
+  // unmatched index must never coerce "undefined" into the page.
+  const expandCodeSpans = (t) => t.replace(/\x00IC(\d+)\x00/g, (m, i) => codeSpans[+i] ?? m);
+  const saveCodeSpan = (c) => {
+    // A single-backtick pair can capture an already-extracted ``span`` (e.g.
+    // `a ``b`` c`). Expand its placeholder now — the one-pass restore below
+    // never rescans replacement text, so a nested placeholder would leak raw
+    // \x00 bytes into the page. Expanding reproduces main's nested-<code> output.
+    c = expandCodeSpans(c);
+    codeSpans.push(`<code>${c.trim() || c}</code>`);
+    return `\x00IC${codeSpans.length - 1}\x00`;
+  };
+  text = text.replace(/``([^`]+)``/g, (_, c) => saveCodeSpan(c));
+  text = text.replace(/`([^`\n]+?)`/g, (_, c) => saveCodeSpan(c));
 
   // Convert emoji shortcodes to Unicode BEFORE italic processing
   // (shortcodes like :white_check_mark: have underscores that would trigger italic)
-  // Only convert outside of <code> tags
-  text = text.replace(/((?:<code>[\s\S]*?<\/code>)|:[\w+-]+:)/g, (match) => {
-    if (match.startsWith("<code>")) return match; // don't touch code content
-    return EMOJI_MAP[match] || match.replace(/_/g, "\x02"); // protect underscores in unknown emoji
-  });
+  text = text.replace(/:[\w+-]+:/g, (match) =>
+    EMOJI_MAP[match] || match.replace(/_/g, "\x02")); // protect underscores in unknown emoji
 
   // Images
   text = text.replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, '<a href="$2">$1</a>');
@@ -377,9 +393,8 @@ function inlineToHTML(text) {
   // pasted HTML never becomes a real mention. Render them as visible @/# text
   // so the paste doesn't contain raw <@U...> noise; the user still has to
   // re-type the mention in Slack for it to notify anyone. Tokens inside
-  // inline code are left as-is.
-  text = text.replace(/(<code>[\s\S]*?<\/code>)|&lt;([@#!][^&\s]+)&gt;/g, (m, code, token) => {
-    if (code) return code;
+  // inline code are left as-is (code content sits in placeholders here).
+  text = text.replace(/&lt;([@#!][^&\s]+)&gt;/g, (m, token) => {
     const [id, label] = token.slice(1).split("|");
     if (token.startsWith("@")) return `@${label || id}`;
     if (token.startsWith("#")) return `#${label || id}`;
@@ -392,6 +407,11 @@ function inlineToHTML(text) {
 
   // Newlines within paragraphs
   text = text.replace(/\n/g, "<br>\n");
+
+  // Restore inline code spans last — after the newline pass, so a rare
+  // multi-line ``span`` keeps its raw newline instead of gaining a <br>
+  // (a <br> inside <li> makes Slack flatten the whole list on paste).
+  text = expandCodeSpans(text);
 
   return text;
 }
@@ -411,11 +431,13 @@ function convertToMrkdwn(md) {
     return `\x00CB${idx}\x00`;
   });
 
-  // Extract inline code
+  // Extract inline code — trim inner padding to match the HTML path (stray
+  // spaces render inside Slack's code span); a whitespace-only span keeps its
+  // content so it doesn't collapse to a literal ``.
   const inlineCodes = [];
   result = result.replace(/`([^`\n]+?)`/g, (_, code) => {
     const idx = inlineCodes.length;
-    inlineCodes.push("`" + code + "`");
+    inlineCodes.push("`" + (code.trim() || code) + "`");
     return `\x00IC${idx}\x00`;
   });
 
@@ -580,8 +602,8 @@ table{border-collapse:collapse;border:1px solid #ccc;margin:8px 0}
 th,td{border:1px solid #ccc;padding:6px 12px}
 th{font-weight:700;background:#f8f9fa}
 pre{background:#f4f4f4;padding:10px;border-radius:4px;font-family:'SF Mono',Monaco,Menlo,monospace;font-size:13px;overflow-x:auto}
-code{background:#f0f0f0;padding:2px 5px;border-radius:3px;font-family:'SF Mono',Monaco,Menlo,monospace;font-size:13px;color:#c7254e}
-pre code{background:none;padding:0;color:inherit}
+code{background:#f0f0f0;padding:2px 5px;margin:0 2px;border-radius:3px;font-family:'SF Mono',Monaco,Menlo,monospace;font-size:13px;color:#c7254e}
+pre code{background:none;padding:0;margin:0;color:inherit}
 blockquote{border-left:4px solid #ddd;padding:4px 12px;margin:8px 0;color:#555}
 a{color:#1264a3;text-decoration:none}
 ul,ol{padding-left:24px;margin:4px 0}li{margin:2px 0}
@@ -625,9 +647,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .mc{font-size:15px;line-height:1.46668;color:#d1d2d3;word-wrap:break-word}
 .mc b{color:#e8e8e8}.mc i{font-style:italic}.mc s{text-decoration:line-through;color:#9a9b9e}
 .mc a{color:#1d9bd1;text-decoration:none}.mc a:hover{text-decoration:underline}
-.mc code{background:#1a1d21;border:1px solid #2c2d30;border-radius:3px;padding:1px 4px;font-family:'SF Mono',Monaco,Menlo,monospace;font-size:12px;color:#e06c75}
+.mc code{background:#1a1d21;border:1px solid #2c2d30;border-radius:3px;padding:1px 4px;margin:0 2px;font-family:'SF Mono',Monaco,Menlo,monospace;font-size:12px;color:#e06c75}
 .mc pre{background:#1a1d21;border:1px solid #2c2d30;border-radius:4px;padding:12px;margin:8px 0;overflow-x:auto}
-.mc pre code{background:none;border:none;padding:0;font-size:13px;color:#d1d2d3}
+.mc pre code{background:none;border:none;padding:0;margin:0;font-size:13px;color:#d1d2d3}
 .mc blockquote{border-left:4px solid #4a154b;padding:4px 12px;margin:4px 0;color:#9a9b9e}
 .mc ul,.mc ol{padding-left:24px;margin:4px 0}.mc li{margin:2px 0}
 .mc .mc table{border-collapse:collapse;margin:8px 0;font-size:14px}
@@ -705,6 +727,12 @@ async function sendWebhook(mrkdwn, webhookUrl) {
 const command = process.argv[2] || "preview";
 let markdown = readStdin().trim();
 
+// \x00-\x02 are internal placeholder sentinels (code spans, Slack tokens,
+// bold, underscore protection) — strip them from input so crafted control
+// bytes can't spoof a placeholder and duplicate or corrupt restored content.
+// They're invalid in Markdown text anyway.
+markdown = markdown.replace(/[\x00-\x02]/g, "");
+
 // Opt-in Jira auto-linking: set JIRA_BASE_URL (e.g. https://yoursite.atlassian.net)
 // to turn bare ticket keys into clickable links on every output path.
 if (markdown && process.env.JIRA_BASE_URL) {
@@ -747,10 +775,14 @@ switch (command) {
 
     // Open the COPY page directly — user selects content, Cmd+C, paste in Slack.
     // Windows `start` treats the first quoted arg as a window title, hence "".
-    const openCmd = platform() === "darwin" ? "open" : platform() === "linux" ? "xdg-open" : 'start ""';
-    exec(`${openCmd} "${copyPath}"`);
-
-    console.log(`✅ Copy page opened in browser.`);
+    // SLACK_FORMATTER_NO_OPEN suppresses the browser (tests/CI generate pages headlessly).
+    if (process.env.SLACK_FORMATTER_NO_OPEN) {
+      console.log(`✅ Copy page generated (browser open suppressed).`);
+    } else {
+      const openCmd = platform() === "darwin" ? "open" : platform() === "linux" ? "xdg-open" : 'start ""';
+      exec(`${openCmd} "${copyPath}"`);
+      console.log(`✅ Copy page opened in browser.`);
+    }
     console.log(`   Select the content, Cmd+C, then Cmd+V in Slack.`);
     console.log(`   Copy page: ${copyPath}`);
     console.log(`   Preview:   ${previewPath}`);

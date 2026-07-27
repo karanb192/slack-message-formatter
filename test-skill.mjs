@@ -9,6 +9,9 @@
 
 import { execSync, spawn } from "child_process";
 import { createServer } from "http";
+import { mkdtempSync, readdirSync, readFileSync, rmSync } from "fs";
+import { tmpdir } from "os";
+import { join } from "path";
 
 const RUN = "skills/slack-message-formatter/src/run.mjs";
 const RESET = "\x1b[0m";
@@ -72,6 +75,17 @@ function testContains(name, cmd, input, mustContain, mustNotContain = [], env = 
         `${RED}       Unwanted: ${JSON.stringify(unwanted)}${RESET}`
       );
     console.log(`${DIM}       Output: ${JSON.stringify(actual.slice(0, 200))}${RESET}`);
+  }
+}
+
+function check(name, cond, detail = "", cmd = "send") {
+  if (cond) {
+    pass++;
+    console.log(`${GREEN}  PASS${RESET} [${cmd}] ${name}`);
+  } else {
+    fail++;
+    console.log(`${RED}  FAIL${RESET} [${cmd}] ${name}`);
+    if (detail) console.log(`${RED}       ${detail.slice(0, 300)}${RESET}`);
   }
 }
 
@@ -423,6 +437,79 @@ testContains("Pre-escaped &quot; not double-escaped", "html",
   "say &quot;hi&quot; loudly",
   ["&quot;hi&quot;"],
   ["&amp;quot;"]);
+
+section("HTML: Inline Code Trim Parity (issue #14)");
+
+// Single- and double-backtick spans must trim inner padding identically —
+// stray spaces inside the pill leak into the pasted Slack code span.
+test("Single-backtick inner whitespace trimmed", "html",
+  "a ` x ` b", "a <code>x</code> b");
+
+test("Double-backtick inner whitespace trimmed", "html",
+  "a ``  x  `` b", "a <code>x</code> b");
+
+testContains("Trim parity between backtick syntaxes", "html",
+  "single ` pad ` double ``   pad   `` end",
+  ["single <code>pad</code> double <code>pad</code> end"]);
+
+test("Code without padding unchanged", "html",
+  "`resolveModelId()`", "<code>resolveModelId()</code>");
+
+test("Whitespace-only code span keeps its space", "html",
+  "a ` ` b", "a <code> </code> b");
+
+test("Inline code padding trimmed (mrkdwn parity)", "mrkdwn",
+  "run ` npm ci ` now", "run `npm ci` now");
+
+test("Whitespace-only code span kept (mrkdwn)", "mrkdwn",
+  "a ` ` b", "a ` ` b");
+
+section("HTML: Code Span Content Isolated From Formatting Regexes");
+
+// Code spans are placeholder-extracted before the bold/italic/emoji/token
+// regexes run — a * or _ at a span edge must never pair with a delimiter
+// outside the span, and markdown inside a span must stay literal.
+test("Asterisk in code span doesn't pair with outside italics", "html",
+  "a ` * ` b *it* c", "a <code>*</code> b <i>it</i> c");
+
+test("Glob patterns in padded spans keep their stars", "html",
+  "glob ` foo* ` and ` *bar ` done",
+  "glob <code>foo*</code> and <code>*bar</code> done");
+
+test("Underscore-only code spans stay literal", "html",
+  "use ` _ ` here and ` _ ` there",
+  "use <code>_</code> here and <code>_</code> there");
+
+test("Markdown formatting inside code span left literal", "html",
+  "`**not bold** and *not italic*`",
+  "<code>**not bold** and *not italic*</code>");
+
+// A single-backtick pair around an already-extracted ``span`` must expand the
+// nested placeholder (matching main's nested-<code> output) — a leaked
+// placeholder would put raw \x00 bytes and "IC0" text into the Slack paste.
+test("Single-backtick span wrapping a double-backtick span", "html",
+  "`a ``b`` c`", "<code>a <code>b</code> c</code>");
+
+testContains("Stray backticks flanking a double span leak no placeholders", "html",
+  "the ` key and ``git status`` then ` end",
+  ["<code>git status</code>"], ["IC0", "IC1", "undefined"]);
+
+// Sentinel control bytes (\x00-\x02) can't ride through the shell heredoc
+// harness — drive stdin directly. Crafted \x00IC<n>\x00 bytes in the input
+// must not spoof a placeholder (duplicating a real span) — main strips them.
+{
+  const nulOut = await new Promise((resolve) => {
+    const child = spawn("node", [RUN, "html"]);
+    let out = "";
+    child.stdout.on("data", (d) => (out += d));
+    child.on("close", () => resolve(out.trim()));
+    child.stdin.write("a \x00IC0\x00 b `real`");
+    child.stdin.end();
+  });
+  check("placeholder-sentinel bytes in input can't spoof a code span",
+    nulOut === "a IC0 b <code>real</code>",
+    JSON.stringify(nulOut), "html");
+}
 
 section("HTML: List Item Continuation Lines");
 
@@ -1203,21 +1290,56 @@ test("file_path/to_something", "html",
   "Edit file_path/to_something");
 
 // =============================================================
+// PREVIEW COMMAND — generated pages (headless via SLACK_FORMATTER_NO_OPEN)
+// =============================================================
+
+section("preview: inline code pill spacing (issue #14)");
+
+{
+  const previewDir = mkdtempSync(join(tmpdir(), "smf-test-"));
+  const out = run("preview", "Use `resolveModelId()`, not ` haiku `.", {
+    SLACK_FORMATTER_PREVIEW_DIR: previewDir,
+    SLACK_FORMATTER_NO_OPEN: "1",
+  });
+  const files = readdirSync(previewDir);
+  const copyFile = files.find((f) => f.startsWith("copy-"));
+  const previewFile = files.find((f) => f.startsWith("preview-"));
+
+  check("generates copy and preview pages without opening browser",
+    Boolean(copyFile && previewFile) && out.includes("suppressed"),
+    JSON.stringify({ files, out }), "preview");
+
+  const copyHtml = copyFile ? readFileSync(join(previewDir, copyFile), "utf-8") : "";
+  const previewHtml = previewFile ? readFileSync(join(previewDir, previewFile), "utf-8") : "";
+
+  check("copy page code pill has horizontal margin",
+    copyHtml.includes("code{background:#f0f0f0;padding:2px 5px;margin:0 2px;"),
+    copyHtml.match(/^code\{.*$/m)?.[0] ?? "code{} rule not found", "preview");
+
+  check("copy page pre code resets margin",
+    copyHtml.includes("pre code{background:none;padding:0;margin:0;color:inherit}"),
+    copyHtml.match(/^pre code\{.*$/m)?.[0] ?? "pre code{} rule not found", "preview");
+
+  check("preview page code pill has horizontal margin",
+    previewHtml.includes(".mc code{") && /\.mc code\{[^}]*margin:0 2px/.test(previewHtml),
+    previewHtml.match(/\.mc code\{[^}]*\}/)?.[0] ?? ".mc code{} rule not found", "preview");
+
+  check("preview page pre code resets margin",
+    /\.mc pre code\{[^}]*margin:0[;}]/.test(previewHtml),
+    previewHtml.match(/\.mc pre code\{[^}]*\}/)?.[0] ?? ".mc pre code{} rule not found", "preview");
+
+  check("copy page trims single-backtick span content",
+    copyHtml.includes("<code>haiku</code>"),
+    copyHtml.match(/<code>[^<]*<\/code>/g)?.join(" ") ?? "no code spans", "preview");
+
+  rmSync(previewDir, { recursive: true, force: true });
+}
+
+// =============================================================
 // SEND COMMAND — real HTTP round-trip against a local server
 // =============================================================
 
 section("send: webhook delivery & error reporting");
-
-function check(name, cond, detail = "") {
-  if (cond) {
-    pass++;
-    console.log(`${GREEN}  PASS${RESET} [send] ${name}`);
-  } else {
-    fail++;
-    console.log(`${RED}  FAIL${RESET} [send] ${name}`);
-    if (detail) console.log(`${RED}       ${detail.slice(0, 300)}${RESET}`);
-  }
-}
 
 const received = [];
 const server = createServer((req, res) => {

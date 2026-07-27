@@ -107,6 +107,7 @@ Slack uses **mrkdwn** (not Markdown). Key differences:
 | Env Variable | Default | Description |
 |-------------|---------|-------------|
 | `SLACK_FORMATTER_PREVIEW_DIR` | `/tmp/slack-formatter` | Directory for preview HTML files (pruned after 7 days) |
+| `SLACK_FORMATTER_NO_OPEN` | (unset) | When set, `preview` generates the pages but does not open a browser (used by tests/CI) |
 | `SLACK_WEBHOOK_URL` | (none) | Slack webhook URL for sending messages (`CCH_SLA_WEBHOOK` also honored) |
 | `JIRA_BASE_URL` | (none) | Jira site URL (e.g. `https://yoursite.atlassian.net`). When set, bare ticket keys like `ENG-12345` are auto-linked to `$JIRA_BASE_URL/browse/ENG-12345` on every output path. Keys inside code, existing links, or URLs are left alone. |
 
