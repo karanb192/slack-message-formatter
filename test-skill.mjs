@@ -300,6 +300,49 @@ testContains("Table-blockquote separation", "mrkdwn",
   ["```\n"],
   ["```>"]);
 
+section("mrkdwn: Placeholder Restore (issues #16, #17)");
+
+// Inline code is extracted before tables, so a cell's placeholder ends up
+// inside the table's code block — code blocks must restore first or the
+// placeholder leaks as literal \x00IC bytes.
+testContains("Inline code inside table cell restored", "mrkdwn",
+  "| cmd | desc |\n|---|---|\n| `npm ci` | install |",
+  ["| `npm ci` | install |"],
+  ["IC0", "\x00"]);
+
+testContains("Inline code in table cell plus code span outside", "mrkdwn",
+  "Run `make` first.\n\n| cmd | desc |\n|---|---|\n| `npm ci` | install |",
+  ["Run `make` first.", "| `npm ci` | install |"],
+  ["IC0", "IC1", "\x00"]);
+
+// String.replace treats $&, $', $1… in the replacement as patterns — the
+// restore loops must use a function callback so code content stays literal.
+test("Dollar-ampersand in code span survives restore", "mrkdwn",
+  "a `$&` b", "a `$&` b");
+
+test("Dollar patterns $' and $1 in code spans survive", "mrkdwn",
+  "`$'` and `$1`", "`$'` and `$1`");
+
+testContains("Dollar patterns in fenced block survive restore", "mrkdwn",
+  "```\necho $& $1 $'\n```",
+  ["echo $& $1 $'"]);
+
+testContains("Dollar pattern in labeled autolink survives restore", "mrkdwn",
+  "See <https://x.com|price is $&>",
+  ["<https://x.com|price is $&>"]);
+
+// Nesting also happens in the other direction: a stray-backtick span can
+// capture a fence's placeholder once the multi-line fence collapses to one
+// line. The restore must iterate until no placeholder remains.
+test("Code span capturing a collapsed fence reconstructs verbatim", "mrkdwn",
+  "a `foo ```\nbar\n``` baz` end",
+  "a `foo ```\nbar\n``` baz` end");
+
+testContains("Fence collapsed into a table row restores clean", "mrkdwn",
+  "| a ```\nx\n``` | b |\n|---|---|\n| 1 | 2 |",
+  ["x"],
+  ["\x00"]);
+
 section("mrkdwn: Blockquotes");
 
 test("Simple blockquote", "mrkdwn", "> This is a quote", "> This is a quote");
