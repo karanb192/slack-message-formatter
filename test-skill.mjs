@@ -2060,6 +2060,52 @@ test("html: unescaped emphasis still converts alongside escapes",
   "\\*lit\\* and *real*",
   "*lit* and <i>real</i>");
 
+section("Angle-bracket autolinks on the html path (issue #32)");
+
+test("html: <https://…> autolink renders as a real anchor",
+  "html",
+  "Docs live at <https://example.com/docs> if you need them.",
+  'Docs live at <a href="https://example.com/docs">https://example.com/docs</a> if you need them.');
+
+test("html: Slack-labeled <url|label> renders label as link text",
+  "html",
+  "See <https://example.com|the docs> here",
+  'See <a href="https://example.com">the docs</a> here');
+
+test("html: <mailto:…> autolink renders as a real anchor",
+  "html",
+  "Ping <mailto:team@example.com> anytime",
+  'Ping <a href="mailto:team@example.com">mailto:team@example.com</a> anytime');
+
+testContains("html: underscores in autolink URL not italicized",
+  "html",
+  "Get <https://example.com/__init__.py> and *emphasis* works",
+  ['<a href="https://example.com/__init__.py">https://example.com/__init__.py</a>', "<i>emphasis</i>"],
+  ["<b>"]);
+
+testContains("html: autolink inside code span stays literal",
+  "html",
+  "type `<https://example.com>` verbatim",
+  ["<code>&lt;https://example.com&gt;</code>"],
+  ["<a href"]);
+
+testContains("html: ampersand in autolink query escaped in href",
+  "html",
+  "Try <https://example.com/?a=1&b=2> now",
+  ['<a href="https://example.com/?a=1&amp;b=2">'],
+  []);
+
+testContains("html: non-URL angle text still escaped, mentions unaffected",
+  "html",
+  "a <b> tag and <@U123|karan> plus <https://example.com>",
+  ["&lt;b&gt;", "@karan", '<a href="https://example.com">'],
+  []);
+
+test("mrkdwn: raw autolink still preserved alongside html fix",
+  "mrkdwn",
+  "Docs at <https://example.com/docs> here",
+  "Docs at <https://example.com/docs> here");
+
 section("Real-world: Meeting Notes");
 
 const meetingMd = `## Meeting Notes

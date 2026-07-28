@@ -446,6 +446,19 @@ function inlineToHTML(text) {
   text = text.replace(/``([^`]+)``/g, (_, c) => saveCodeSpan(c));
   text = text.replace(/`([^`\n]+?)`/g, (_, c) => saveCodeSpan(c));
 
+  // Angle-bracket autolinks <https://…>/<mailto:…> and the Slack-labeled form
+  // <url|label> — same token set the mrkdwn path protects — become real
+  // anchors; pasted <a href> links land in Slack as links, unlike mention
+  // tokens below. Extract to placeholders (after code spans, so `<url>` in
+  // code stays literal) and restore after the emphasis passes so a URL with
+  // `__`/`_segment_` can't be mangled or pair delimiters across the line.
+  // Matches the escaped form: the < > became &lt;/&gt; above.
+  const autolinks = [];
+  text = text.replace(/&lt;((?:https?|mailto):[^\s]+?)(?:\|([^\n]+?))?&gt;/g, (_, url, label) => {
+    autolinks.push(`<a href="${url}">${label || url}</a>`);
+    return `\x00AL${autolinks.length - 1}\x00`;
+  });
+
   // Backslash escapes (CommonMark): \* \_ \~ \` \\ suppress formatting and
   // render the bare character. Extract to placeholders so the emphasis
   // passes below can't pair an escaped delimiter (the \_ lookbehind treats a
@@ -504,6 +517,10 @@ function inlineToHTML(text) {
   // restore so protected underscores from unknown shortcodes in a URL still
   // get unwound. ?? m: defensive, same as expandCodeSpans.
   text = text.replace(/\x00LH(\d+)\x00/g, (m, i) => hrefs[+i] ?? m);
+
+  // Restore autolinks as ready-made anchors. ?? m: defensive, same as
+  // expandCodeSpans.
+  text = text.replace(/\x00AL(\d+)\x00/g, (m, i) => autolinks[+i] ?? m);
 
   // Slack tokens (<@U...>, <#C...>, <!here>) only resolve via the API path —
   // pasted HTML never becomes a real mention. Render them as visible @/# text
