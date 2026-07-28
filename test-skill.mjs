@@ -1959,6 +1959,54 @@ test("html: __ in badge target URL survives emphasis shielding",
   "[![pkg](https://x.com/badge.svg)](https://x.com/pkg/__init__.py)",
   '<a href="https://x.com/pkg/__init__.py">pkg</a>');
 
+section("Space-flanked bold delimiters stay literal (issue #33)");
+
+test("html: ** exponent operators pass through literally",
+  "html",
+  "Note that 2 ** 8 = 256 and 2 ** 10 = 1024 in Python.",
+  "Note that 2 ** 8 = 256 and 2 ** 10 = 1024 in Python.");
+
+test("mrkdwn: ** exponent operators pass through literally",
+  "mrkdwn",
+  "Note that 2 ** 8 = 256 and 2 ** 10 = 1024 in Python.",
+  "Note that 2 ** 8 = 256 and 2 ** 10 = 1024 in Python.");
+
+testContains("html: glob ** across lines does not become a bold span",
+  "html",
+  "The glob src/** matches everything\nand dist/** is excluded.",
+  ["src/**", "dist/**"],
+  ["<b>"]);
+
+test("html: space-flanked __ and ~~ pairs stay literal",
+  "html",
+  "a __ b __ c and 5 ~~ 6 ~~ 7 stay.",
+  "a __ b __ c and 5 ~~ 6 ~~ 7 stay.");
+
+test("mrkdwn: space-flanked __ and ~~ pairs stay literal",
+  "mrkdwn",
+  "a __ b __ c and 5 ~~ 6 ~~ 7 stay.",
+  "a __ b __ c and 5 ~~ 6 ~~ 7 stay.");
+
+test("html: trailing-space bold like '** text **' stays literal",
+  "html",
+  "this ** is not ** bold",
+  "this ** is not ** bold");
+
+test("html: real bold/strike still convert",
+  "html",
+  "**bold** and __also__ and ***both*** and ~~gone~~",
+  "<b>bold</b> and <b>also</b> and <b><i>both</i></b> and <s>gone</s>");
+
+test("mrkdwn: real bold/strike still convert",
+  "mrkdwn",
+  "**bold** and __also__ and ***both*** and ~~gone~~",
+  "*bold* and *also* and _*both*_ and ~gone~");
+
+test("html: single-char bold still converts",
+  "html",
+  "**a**",
+  "<b>a</b>");
+
 section("Real-world: Meeting Notes");
 
 const meetingMd = `## Meeting Notes
