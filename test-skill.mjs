@@ -1465,6 +1465,48 @@ test("mrkdwn path keeps the literal numbers", "mrkdwn",
   "3. step three\n4. step four",
   "3. step three\n4. step four");
 
+section("HTML: only '1.' interrupts a paragraph (issue #22)");
+
+test("Wrapped line starting with a year stays in the paragraph", "html",
+  "The company was founded in\n2024. It was a great year.",
+  "The company was founded in<br>\n2024. It was a great year.");
+
+test("CommonMark windows example stays one paragraph", "html",
+  "The number of windows in my house is\n14. The number of doors is 6.",
+  "The number of windows in my house is<br>\n14. The number of doors is 6.");
+
+test("Paren marker with number != 1 does not interrupt either", "html",
+  "The total came to\n2) which surprised us.",
+  "The total came to<br>\n2) which surprised us.");
+
+test("'1.' still interrupts a paragraph", "html",
+  "Steps:\n1. First\n2. Second",
+  `Steps:
+<ol>
+<li>First</li>
+<li>Second</li>
+</ol>`);
+
+test("'1)' still interrupts a paragraph", "html",
+  "Steps:\n1) First\n2) Second",
+  `Steps:
+<ol>
+<li>First</li>
+<li>Second</li>
+</ol>`);
+
+test("After a blank line any number still starts a list", "html",
+  "Intro paragraph.\n\n2024. first\n2025. second",
+  `Intro paragraph.
+<ol start="2024">
+<li>first</li>
+<li>second</li>
+</ol>`);
+
+test("mrkdwn path keeps wrapped prose verbatim", "mrkdwn",
+  "The company was founded in\n2024. It was a great year.",
+  "The company was founded in\n2024. It was a great year.");
+
 section("Real-world: Meeting Notes");
 
 const meetingMd = `## Meeting Notes
