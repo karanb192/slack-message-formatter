@@ -1201,6 +1201,54 @@ testContains("CRLF bold heading matches LF output (html)", "html",
   ["<b><b>Status:</b> done</b>", "All good."],
   ["##"]);
 
+section("HTML: list interrupted by unindented line (issue #19)");
+
+test("Fence between ordered items stays in place, no duplicates", "html",
+  "1. First step\n2. Second step:\n```\nkubectl apply -f config.yaml\n```\n3. Third step",
+  `<ol>
+<li>First step</li>
+<li>Second step:</li>
+</ol><br>
+<pre><code>kubectl apply -f config.yaml</code></pre><br>
+<ol>
+<li>Third step</li>
+</ol>`);
+
+test("Plain line between bullets splits list, items appear once", "html",
+  "- a\nx\n- b",
+  `<ul>
+<li>a</li>
+</ul><br>
+x
+<ul>
+<li>b</li>
+</ul>`);
+
+test("Mixed markers stay in source order", "html",
+  "1. Deploy\n- note\n2. Verify",
+  `<ol>
+<li>Deploy</li>
+</ol><br>
+<ul>
+<li>note</li>
+</ul><br>
+<ol>
+<li>Verify</li>
+</ol>`);
+
+test("HTML comment between bullets stripped without duplication", "html",
+  "- a\n<!-- c -->\n- b",
+  `<ul>
+<li>a</li>
+</ul><br>
+<ul>
+<li>b</li>
+</ul>`);
+
+testContains("Indented continuation still joins into its item", "html",
+  "- parent\n  - child one\n- next parent\n  continuation line",
+  ["<li>next parent continuation line</li>", "<li>child one</li>"]);
+
 section("Real-world: Meeting Notes");
 
 const meetingMd = `## Meeting Notes
