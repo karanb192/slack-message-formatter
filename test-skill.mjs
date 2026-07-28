@@ -2007,6 +2007,59 @@ test("html: single-char bold still converts",
   "**a**",
   "<b>a</b>");
 
+section("Backslash escapes for markdown metacharacters (issue #34)");
+
+test("html: \\* and \\_ render literal characters, no italics",
+  "html",
+  "Literal \\*star\\* and \\_underscore\\_ here",
+  "Literal *star* and _underscore_ here");
+
+test("mrkdwn: \\* and \\_ render literal characters, no italics",
+  "mrkdwn",
+  "Literal \\*star\\* and \\_underscore\\_ here",
+  "Literal *star* and _underscore_ here");
+
+test("html: escaped bold \\*\\*x\\*\\* stays literal",
+  "html",
+  "\\*\\*not bold\\*\\*",
+  "**not bold**");
+
+test("mrkdwn: escaped bold \\*\\*x\\*\\* stays literal",
+  "mrkdwn",
+  "\\*\\*not bold\\*\\*",
+  "**not bold**");
+
+test("html: escaped strikethrough \\~\\~x\\~\\~ stays literal",
+  "html",
+  "\\~\\~keep\\~\\~",
+  "~~keep~~");
+
+test("html: escaped backslash \\\\ renders one backslash",
+  "html",
+  "path C:\\\\temp here",
+  "path C:\\temp here");
+
+testContains("html: backslash inside code span stays verbatim",
+  "html",
+  "run `\\*` now",
+  ["<code>\\*</code>"],
+  ["<i>"]);
+
+test("mrkdwn: backslash inside code span stays verbatim",
+  "mrkdwn",
+  "run `\\*` now",
+  "run `\\*` now");
+
+test("html: \\** leaves literal star then real italic (CommonMark)",
+  "html",
+  "\\**mix*",
+  "*<i>mix</i>");
+
+test("html: unescaped emphasis still converts alongside escapes",
+  "html",
+  "\\*lit\\* and *real*",
+  "*lit* and <i>real</i>");
+
 section("Real-world: Meeting Notes");
 
 const meetingMd = `## Meeting Notes

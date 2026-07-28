@@ -446,6 +446,17 @@ function inlineToHTML(text) {
   text = text.replace(/``([^`]+)``/g, (_, c) => saveCodeSpan(c));
   text = text.replace(/`([^`\n]+?)`/g, (_, c) => saveCodeSpan(c));
 
+  // Backslash escapes (CommonMark): \* \_ \~ \` \\ suppress formatting and
+  // render the bare character. Extract to placeholders so the emphasis
+  // passes below can't pair an escaped delimiter (the \_ lookbehind treats a
+  // backslash as a word boundary); restored as bare literals near the end.
+  // Runs after code-span extraction so backslashes inside `code` stay verbatim.
+  const escapes = [];
+  text = text.replace(/\\([\\*_~`])/g, (_, ch) => {
+    escapes.push(ch);
+    return `\x00BS${escapes.length - 1}\x00`;
+  });
+
   // Convert emoji shortcodes to Unicode BEFORE italic processing
   // (shortcodes like :white_check_mark: have underscores that would trigger italic)
   text = text.replace(/:[\w+-]+:/g, (match) =>
@@ -510,6 +521,11 @@ function inlineToHTML(text) {
   // Restore protected underscores in unknown emoji shortcodes
   text = text.replace(/\x02/g, "_");
 
+  // Restore escaped characters as bare literals — after every formatting
+  // pass, so a once-escaped delimiter can never pair. ?? m: defensive,
+  // same as expandCodeSpans.
+  text = text.replace(/\x00BS(\d+)\x00/g, (m, i) => escapes[+i] ?? m);
+
   // Newlines within paragraphs
   text = text.replace(/\n/g, "<br>\n");
 
@@ -558,6 +574,16 @@ function convertToMrkdwn(md) {
 
   // HTML comments
   result = result.replace(/<!--[\s\S]*?-->/g, "");
+
+  // Backslash escapes (CommonMark): \* \_ \~ \` \\ suppress formatting and
+  // render the bare character — mirrors the HTML path. Runs after code and
+  // table extraction so backslashes inside code stay verbatim; restored as
+  // bare literals just before the placeholder-splice loop.
+  const escapes = [];
+  result = result.replace(/\\([\\*_~`])/g, (_, ch) => {
+    escapes.push(ch);
+    return `\x00BS${escapes.length - 1}\x00`;
+  });
 
   // Slack's API parses <...> as control sequences (mentions, links, dates),
   // so literal < and > in text must be escaped — but intentional Slack tokens
@@ -663,6 +689,12 @@ function convertToMrkdwn(md) {
 
   // Escape &
   result = result.replace(/&(?!amp;|lt;|gt;)/g, "&amp;");
+
+  // Restore escaped characters as bare literals — after every formatting
+  // pass, so a once-escaped delimiter can never pair. Slack mrkdwn has no
+  // escape syntax of its own, so the bare character is the closest fidelity.
+  // ?? m: defensive, same as the other placeholder restores.
+  result = result.replace(/\x00BS(\d+)\x00/g, (m, i) => escapes[+i] ?? m);
 
   // Saved entries nest in both directions — a table's code block embeds the
   // inline-code placeholders of its cells, and an inline span can capture a
