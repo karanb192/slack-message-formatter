@@ -1170,6 +1170,37 @@ testContains("Windows CRLF (mrkdwn)", "mrkdwn",
   "line one\r\nline two",
   ["line one", "line two"]);
 
+section("CRLF normalization (issue #21)");
+
+testContains("CRLF heading (html)", "html",
+  "# Deploy Update\r\n\r\nAll services green.\r\n",
+  ["<b>Deploy Update</b>", "All services green."],
+  ["# Deploy Update"]);
+
+testContains("CRLF heading (mrkdwn)", "mrkdwn",
+  "# Deploy Update\r\n\r\nAll services green.\r\n",
+  ["*Deploy Update*"],
+  ["# Deploy Update"]);
+
+testContains("CRLF table has no phantom trailing column (html)", "html",
+  "| Col A | Col B |\r\n|---|---|\r\n| 1 | 2 |\r\n",
+  ["Col A | Col B\n------|------\n1     | 2"],
+  ["Col B | "]);
+
+testContains("CRLF list (html)", "html",
+  "- item one\r\n- item two\r\n",
+  ["<li>item one</li>", "<li>item two</li>"]);
+
+testContains("Lone CR line endings (html)", "html",
+  "# Title\rBody text\r",
+  ["<b>Title</b>", "Body text"],
+  ["# Title"]);
+
+testContains("CRLF bold heading matches LF output (html)", "html",
+  "## **Status:** done\r\n\r\nAll good.\r\n",
+  ["<b><b>Status:</b> done</b>", "All good."],
+  ["##"]);
+
 section("Real-world: Meeting Notes");
 
 const meetingMd = `## Meeting Notes

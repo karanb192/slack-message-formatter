@@ -740,6 +740,11 @@ let markdown = readStdin().trim();
 // They're invalid in Markdown text anyway.
 markdown = markdown.replace(/[\x00-\x02]/g, "");
 
+// Normalize CRLF/CR to LF once at input — every downstream regex assumes \n
+// line endings (`.` and non-`m` `$` don't match past \r), so a stray \r
+// silently breaks heading detection and table cell splitting on the HTML path.
+markdown = markdown.replace(/\r\n?/g, "\n");
+
 // Opt-in Jira auto-linking: set JIRA_BASE_URL (e.g. https://yoursite.atlassian.net)
 // to turn bare ticket keys into clickable links on every output path.
 if (markdown && process.env.JIRA_BASE_URL) {
