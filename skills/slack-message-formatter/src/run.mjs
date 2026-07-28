@@ -242,9 +242,14 @@ function parseHTMLList(lines, startIdx, ordered) {
 
     const m = line.match(marker);
     if (!m) {
-      // Continuation or sub-item — skip for now
-      i++;
-      continue;
+      // Indented continuation/sub-item — skip; anything else ends the list
+      // here, exactly where the outer advance loop stops, so the interrupting
+      // line and the items after it are parsed once by the outer parser.
+      if (line.match(/^\s+\S/)) {
+        i++;
+        continue;
+      }
+      break;
     }
 
     let content = line.replace(marker, "");
