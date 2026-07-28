@@ -1507,6 +1507,32 @@ test("mrkdwn path keeps wrapped prose verbatim", "mrkdwn",
   "The company was founded in\n2024. It was a great year.",
   "The company was founded in\n2024. It was a great year.");
 
+section("HTML: only a full HR line interrupts a paragraph (issue #39)");
+
+test("Continuation line starting with ***emphasis*** stays in the paragraph", "html",
+  "Heads up team:\n***Please read this*** before deploying today.",
+  "Heads up team:<br>\n<b><i>Please read this</i></b> before deploying today.");
+
+test("Continuation line starting with --- stays in the paragraph", "html",
+  "Heads up team:\n--- wait, actually hold off until 3pm.",
+  "Heads up team:<br>\n--- wait, actually hold off until 3pm.");
+
+testContains("Continuation line starting with ___emphasis___ stays in the paragraph", "html",
+  "Heads up team:\n___Please read this___ soon.",
+  ["Heads up team:<br>"], ["<br><br>"]);
+
+test("A bare --- line still interrupts a paragraph as an HR", "html",
+  "para one\n---\npara two",
+  `para one<br><br>\n${"━".repeat(30)}<br><br>\npara two`);
+
+test("A bare *** line still interrupts a paragraph as an HR", "html",
+  "para one\n***\npara two",
+  `para one<br><br>\n${"━".repeat(30)}<br><br>\npara two`);
+
+testContains("An HR line with trailing spaces still interrupts", "html",
+  "para one\n___   \npara two",
+  ["━".repeat(30)], []);
+
 section("Real-world: Meeting Notes");
 
 const meetingMd = `## Meeting Notes
