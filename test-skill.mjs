@@ -1533,6 +1533,52 @@ testContains("An HR line with trailing spaces still interrupts", "html",
   "para one\n___   \npara two",
   ["━".repeat(30)], []);
 
+section("Divider followed by list/tasks/code keeps its gap (issue #40)");
+
+test("HR then unordered list gets one blank line (html)", "html",
+  "---\n\n- action item",
+  `${"━".repeat(30)}<br><br>\n<ul>\n<li>action item</li>\n</ul>`);
+
+test("HR then ordered list gets one blank line (html)", "html",
+  "---\n\n1. first step",
+  `${"━".repeat(30)}<br><br>\n<ol>\n<li>first step</li>\n</ol>`);
+
+test("HR then task list gets one blank line (html)", "html",
+  "---\n\n- [ ] todo",
+  `${"━".repeat(30)}<br><br>\n&#x1F532; todo`);
+
+test("HR then fenced code block gets one blank line (html)", "html",
+  "---\n\n```\ncode\n```",
+  `${"━".repeat(30)}<br><br>\n<pre><code>code</code></pre>`);
+
+testContains("List then HR spacing unchanged (html)", "html",
+  "- item\n\n---",
+  [`</ul><br>\n${"━".repeat(30)}`], []);
+
+testContains("HR then unordered list keeps its blank line (mrkdwn)", "mrkdwn",
+  "---\n\n- action item",
+  [`${"━".repeat(30)}\n\n• action item`], []);
+
+testContains("HR then task list keeps its blank line (mrkdwn)", "mrkdwn",
+  "---\n\n- [ ] todo",
+  [`${"━".repeat(30)}\n\n:black_square_button: todo`], []);
+
+testContains("HR then ordered list keeps its blank line (mrkdwn)", "mrkdwn",
+  "---\n\n1. first step",
+  [`${"━".repeat(30)}\n\n1. first step`], []);
+
+testContains("HR then paragraph keeps its blank line (mrkdwn)", "mrkdwn",
+  "---\n\nparagraph after",
+  [`${"━".repeat(30)}\n\nparagraph after`], []);
+
+testContains("HR with trailing spaces still converts and keeps gap (mrkdwn)", "mrkdwn",
+  "---   \n\n- item",
+  [`${"━".repeat(30)}\n\n• item`], []);
+
+testContains("Intro text before a list still attaches tightly (mrkdwn)", "mrkdwn",
+  "Intro:\n\n- item",
+  ["Intro:\n• item"], []);
+
 section("Real-world: Meeting Notes");
 
 const meetingMd = `## Meeting Notes
