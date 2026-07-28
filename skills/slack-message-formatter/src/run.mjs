@@ -15,7 +15,7 @@
 
 import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, statSync, unlinkSync } from "fs";
 import { join } from "path";
-import { exec } from "child_process";
+import { execFile } from "child_process";
 import { platform, tmpdir } from "os";
 
 // =============================================================
@@ -990,8 +990,9 @@ switch (command) {
     if (process.env.SLACK_FORMATTER_NO_OPEN) {
       console.log(`✅ Copy page generated (browser open suppressed).`);
     } else {
-      const openCmd = platform() === "darwin" ? "open" : platform() === "linux" ? "xdg-open" : 'start ""';
-      exec(`${openCmd} "${copyPath}"`);
+      const openCmd = platform() === "darwin" ? "open" : platform() === "linux" ? "xdg-open" : "cmd";
+      const openArgs = platform() === "win32" ? ["/c", "start", "", copyPath] : [copyPath];
+      execFile(openCmd, openArgs);
       console.log(`✅ Copy page opened in browser.`);
     }
     console.log(`   Select the content, Cmd+C, then Cmd+V in Slack.`);
