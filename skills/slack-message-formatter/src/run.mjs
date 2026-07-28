@@ -451,11 +451,20 @@ function inlineToHTML(text) {
   text = text.replace(/:[\w+-]+:/g, (match) =>
     EMOJI_MAP[match] || match.replace(/_/g, "\x02")); // protect underscores in unknown emoji
 
-  // Images (URL allows one level of balanced parens, e.g. Wikipedia URLs)
-  text = text.replace(/!\[([^\]]*)\]\(((?:[^()\s]|\([^()\s]*\))+)(?:\s+"[^"]*")?\)/g, '<a href="$2">$1</a>');
-
-  // Links (URL allows one level of balanced parens, e.g. Wikipedia URLs)
-  text = text.replace(/\[([^\]]+)\]\(((?:[^()\s]|\([^()\s]*\))+)(?:\s+"[^"]*")?\)/g, '<a href="$2">$1</a>');
+  // Images / links (URL allows one level of balanced parens, e.g. Wikipedia
+  // URLs). Emit the destination as an opaque placeholder — same scheme as code
+  // spans — so the bold/italic passes below can't rewrite `__init__.py` or
+  // `/_draft_/` inside the quoted href (or pair `__` across two hrefs). Link
+  // *text* stays in place so [**bold**](url) still gets emphasis.
+  const hrefs = [];
+  const saveHref = (u) => {
+    hrefs.push(u);
+    return `\x00LH${hrefs.length - 1}\x00`;
+  };
+  text = text.replace(/!\[([^\]]*)\]\(((?:[^()\s]|\([^()\s]*\))+)(?:\s+"[^"]*")?\)/g,
+    (_, t, u) => `<a href="${saveHref(u)}">${t}</a>`);
+  text = text.replace(/\[([^\]]+)\]\(((?:[^()\s]|\([^()\s]*\))+)(?:\s+"[^"]*")?\)/g,
+    (_, t, u) => `<a href="${saveHref(u)}">${t}</a>`);
 
   // Bold + Italic
   text = text.replace(/\*\*\*(.+?)\*\*\*/gs, "<b><i>$1</i></b>");
@@ -471,6 +480,11 @@ function inlineToHTML(text) {
   text = text.replace(/(?<!\*)\*([^\s*](?:.*?[^\s*])?)\*(?!\*)/gs, "<i>$1</i>");
   // Italic (_text_) — require word boundary so snake_case_names aren't mangled
   text = text.replace(/(?<![a-zA-Z0-9])_([^\s_](?:.*?[^\s_])?)_(?![a-zA-Z0-9])/gs, "<i>$1</i>");
+
+  // Restore hrefs now that the emphasis passes are done — before the \x02
+  // restore so protected underscores from unknown shortcodes in a URL still
+  // get unwound. ?? m: defensive, same as expandCodeSpans.
+  text = text.replace(/\x00LH(\d+)\x00/g, (m, i) => hrefs[+i] ?? m);
 
   // Slack tokens (<@U...>, <#C...>, <!here>) only resolve via the API path —
   // pasted HTML never becomes a real mention. Render them as visible @/# text
@@ -561,6 +575,20 @@ function convertToMrkdwn(md) {
   // blank line after the divider
   result = result.replace(/^(?:---+|\*\*\*+|___+)[^\S\n]*$/gm, "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
+  // Emphasis runs before link conversion on this path, so shield `](url)`
+  // destinations first — otherwise `__init__.py` in a URL becomes `*init*.py`
+  // (or two URLs with `__` pair across links). Only the URL is replaced; the
+  // `](`/`)` frame and any title stay so the link regexes below still match.
+  const linkUrls = [];
+  result = result.replace(
+    /(\]\()((?:[^()\s]|\([^()\s]*\))+)((?:\s+"[^"]*")?\))/g,
+    (_, pre, url, post) => {
+      const idx = linkUrls.length;
+      linkUrls.push(url);
+      return `${pre}\x00LU${idx}\x00${post}`;
+    }
+  );
+
   // Order matters here. We use placeholders to avoid conflicts.
   // 1. Bold+italic (***) first
   // 2. Bold (**) — use placeholder \x01 for the single * that Slack uses
@@ -588,6 +616,12 @@ function convertToMrkdwn(md) {
 
   // Links (URL allows one level of balanced parens, e.g. Wikipedia URLs)
   result = result.replace(/\[([^\]]+)\]\(((?:[^()\s]|\([^()\s]*\))+)(?:\s+"[^"]*")?\)/g, "<$2|$1>");
+
+  // Restore URLs here (not in the final placeholder loop) so a stray
+  // `](url)` with no link text, and the `&`-escape / list passes below, see
+  // the same in-place URL text they always did. Function callback so `$`
+  // sequences in a URL aren't treated as replacement patterns.
+  result = result.replace(/\x00LU(\d+)\x00/g, (m, i) => linkUrls[+i] ?? m);
 
   // Task lists
   result = result.replace(/^(\s*)[-*+]\s+\[x\]\s+/gm, "$1:white_check_mark: ");
