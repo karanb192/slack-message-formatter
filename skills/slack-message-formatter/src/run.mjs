@@ -166,9 +166,13 @@ function convertToHTML(md) {
       continue;
     }
 
-    // HTML comment — strip
+    // HTML comment — strip through the close marker, keeping any trailing text
     if (line.match(/^<!--/)) {
       while (i < lines.length && !lines[i].match(/-->/)) i++;
+      if (i < lines.length) {
+        const rest = lines[i].replace(/^[\s\S]*?-->\s*/, "");
+        if (rest.trim()) { lines[i] = rest; continue; }
+      }
       i++;
       continue;
     }
