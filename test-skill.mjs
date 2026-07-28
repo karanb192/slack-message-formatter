@@ -1249,6 +1249,38 @@ testContains("Indented continuation still joins into its item", "html",
   "- parent\n  - child one\n- next parent\n  continuation line",
   ["<li>next parent continuation line</li>", "<li>child one</li>"]);
 
+section("HTML: one-space list continuation lines (issue #28)");
+
+test("One-space continuation joins its bullet item", "html",
+  "- first item\n continued with one leading space\n- second item",
+  `<ul>
+<li>first item continued with one leading space</li>
+<li>second item</li>
+</ul>`);
+
+test("One-space continuation joins its ordered item", "html",
+  "1. first step\n wraps onto a second line\n2. second step",
+  `<ol>
+<li>first step wraps onto a second line</li>
+<li>second step</li>
+</ol>`);
+
+testContains("One-space continuation on a middle item, later items intact", "html",
+  "- alpha\n- beta\n one space wrap\n- gamma",
+  ["<li>alpha</li>", "<li>beta one space wrap</li>", "<li>gamma</li>"]);
+
+testContains("One-space and two-space continuations behave the same", "html",
+  "- one\n a\n- two\n  b",
+  ["<li>one a</li>", "<li>two b</li>"]);
+
+test("One-space-indented sibling marker stays a separate item", "html",
+  "- alpha\n - beta\n- gamma",
+  `<ul>
+<li>alpha</li>
+<li>beta</li>
+<li>gamma</li>
+</ul>`);
+
 section("Real-world: Meeting Notes");
 
 const meetingMd = `## Meeting Notes

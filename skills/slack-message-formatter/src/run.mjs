@@ -263,10 +263,14 @@ function parseHTMLList(lines, startIdx, ordered) {
       continue;
     }
 
-    // Check for nested list
+    // Check for nested list. Also collect one-space-indented lines unless
+    // they are sibling markers — the outer advance loop consumes any
+    // /^\s+\S/ line, so a continuation not captured here is dropped.
     i++;
     const subLines = [];
-    while (i < lines.length && lines[i].match(/^\s{2,}/) && !lines[i].match(/^[^\s]/)) {
+    while (i < lines.length &&
+           (lines[i].match(/^\s{2,}/) ||
+            (lines[i].match(/^\s\S/) && !lines[i].match(marker)))) {
       subLines.push(lines[i]);
       i++;
     }
