@@ -80,8 +80,10 @@ function convertToHTML(md) {
     // HR
     if (line.match(/^(?:---+|\*\*\*+|___+)\s*$/)) {
       // Same unicode divider as the mrkdwn path — a real <hr> does not
-      // survive Slack's paste handler (it turns into stray empty lines)
-      blocks.push(["text", "━".repeat(30)]);
+      // survive Slack's paste handler (it turns into stray empty lines).
+      // Own type: a divider is a separator, not intro text, so a following
+      // list/tasks/pre must not attach tightly to it.
+      blocks.push(["hr", "━".repeat(30)]);
       i++;
       continue;
     }
@@ -508,8 +510,9 @@ function convertToMrkdwn(md) {
   // Headings → bold (use placeholder to avoid italic regex matching)
   result = result.replace(/^#{1,6}\s+(.+?)(?:\s+#+)?$/gm, "\x01$1\x01");
 
-  // HR
-  result = result.replace(/^(?:---+|\*\*\*+|___+)\s*$/gm, "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  // HR — [^\S\n] (not \s) so the match can't swallow the newline and the
+  // blank line after the divider
+  result = result.replace(/^(?:---+|\*\*\*+|___+)[^\S\n]*$/gm, "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
   // Order matters here. We use placeholders to avoid conflicts.
   // 1. Bold+italic (***) first
@@ -554,7 +557,8 @@ function convertToMrkdwn(md) {
     const isList = (l) => /^\s*(?:•|\d+[.)]\s|:white_check_mark:|:black_square_button:)/.test(l);
     for (let k = ls.length - 1; k >= 2; k--) {
       if (isList(ls[k]) && !ls[k - 1].trim() && ls[k - 2].trim() &&
-          !isList(ls[k - 2]) && !ls[k - 2].startsWith(">") && !ls[k - 2].includes("\x00")) {
+          !isList(ls[k - 2]) && !ls[k - 2].startsWith(">") && !ls[k - 2].includes("\x00") &&
+          !/^━+$/.test(ls[k - 2])) {
         ls.splice(k - 1, 1);
       }
     }
