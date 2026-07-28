@@ -1795,6 +1795,49 @@ section("Table padding uses display width, not UTF-16 .length (issue #38)");
     asciiOut, "html");
 }
 
+section("Link URLs with balanced parentheses (issue #25)");
+
+test("html: Wikipedia-style URL keeps closing paren in href",
+  "html",
+  "See [C (programming language)](https://en.wikipedia.org/wiki/C_(programming_language)) for details.",
+  'See <a href="https://en.wikipedia.org/wiki/C_(programming_language)">C (programming language)</a> for details.');
+
+test("mrkdwn: Wikipedia-style URL keeps closing paren in link",
+  "mrkdwn",
+  "See [C (programming language)](https://en.wikipedia.org/wiki/C_(programming_language)) for details.",
+  "See <https://en.wikipedia.org/wiki/C_(programming_language)|C (programming language)> for details.");
+
+test("html: image URL with parens is not truncated",
+  "html",
+  "![diagram](https://example.com/img_(v2).png)",
+  '<a href="https://example.com/img_(v2).png">diagram</a>');
+
+test("mrkdwn: image URL with parens is not truncated",
+  "mrkdwn",
+  "![diagram](https://example.com/img_(v2).png)",
+  "<https://example.com/img_(v2).png|diagram>");
+
+test("html: parenthesized URL with link title still drops the title",
+  "html",
+  '[Foo](https://en.wikipedia.org/wiki/Foo_(bar) "Disambiguation") end',
+  '<a href="https://en.wikipedia.org/wiki/Foo_(bar)">Foo</a> end');
+
+testContains("mrkdwn: no stray ')' left after a parenthesized-URL link",
+  "mrkdwn",
+  "[MS Learn](https://learn.microsoft.com/x#syntax-(preview)) done",
+  ["<https://learn.microsoft.com/x#syntax-(preview)|MS Learn> done"],
+  [")>)", "preview|"]);
+
+test("html: plain URLs and surrounding text parens unaffected",
+  "html",
+  "Text with (parens) and [link](https://x.com/a) after.",
+  'Text with (parens) and <a href="https://x.com/a">link</a> after.');
+
+test("mrkdwn: two parenthesized-URL links on one line both close correctly",
+  "mrkdwn",
+  "[A](https://w.org/A_(x)) and [B](https://w.org/B_(y))",
+  "<https://w.org/A_(x)|A> and <https://w.org/B_(y)|B>");
+
 section("Real-world: Meeting Notes");
 
 const meetingMd = `## Meeting Notes
