@@ -490,10 +490,13 @@ function inlineToHTML(text) {
   // (nested <a> is invalid; browsers split it and drop the outer target).
   // The outer target is the link the user intended; the image URL is dropped,
   // consistent with the image-as-link convention below.
+  // Empty alt (![](url)) would make an invisible <a></a> that copies as
+  // nothing — fall back to the URL as the visible text. The href placeholder
+  // doubles as the text so the emphasis passes can't rewrite it either.
   text = text.replace(/\[!\[([^\]]*)\]\((?:[^()\s]|\([^()\s]*\))+(?:\s+"[^"]*")?\)\]\(((?:[^()\s]|\([^()\s]*\))+)(?:\s+"[^"]*")?\)/g,
-    (_, t, u) => `<a href="${saveHref(u)}">${t}</a>`);
+    (_, t, u) => { const p = saveHref(u); return `<a href="${p}">${t.trim() ? t : p}</a>`; });
   text = text.replace(/!\[([^\]]*)\]\(((?:[^()\s]|\([^()\s]*\))+)(?:\s+"[^"]*")?\)/g,
-    (_, t, u) => `<a href="${saveHref(u)}">${t}</a>`);
+    (_, t, u) => { const p = saveHref(u); return `<a href="${p}">${t.trim() ? t : p}</a>`; });
   text = text.replace(/\[([^\]]+)\]\(((?:[^()\s]|\([^()\s]*\))+)(?:\s+"[^"]*")?\)/g,
     (_, t, u) => `<a href="${saveHref(u)}">${t}</a>`);
 
@@ -667,10 +670,14 @@ function convertToMrkdwn(md) {
   // pass: otherwise the link pass re-wraps the image's <img|alt> in a second,
   // invalid nested <...|...>. Keep the outer (user-intended) target; the
   // image URL is dropped, consistent with the image-as-link pass below.
-  result = result.replace(/\[!\[([^\]]*)\]\((?:[^()\s]|\([^()\s]*\))+(?:\s+"[^"]*")?\)\]\(((?:[^()\s]|\([^()\s]*\))+)(?:\s+"[^"]*")?\)/g, "<$2|$1>");
+  // Empty alt (![](url)) would emit <url|> — an empty label Slack renders as
+  // nothing — so fall back to the bare <url> autolink form.
+  result = result.replace(/\[!\[([^\]]*)\]\((?:[^()\s]|\([^()\s]*\))+(?:\s+"[^"]*")?\)\]\(((?:[^()\s]|\([^()\s]*\))+)(?:\s+"[^"]*")?\)/g,
+    (_, t, u) => t.trim() ? `<${u}|${t}>` : `<${u}>`);
 
   // Images → links (URL allows one level of balanced parens, e.g. Wikipedia URLs)
-  result = result.replace(/!\[([^\]]*)\]\(((?:[^()\s]|\([^()\s]*\))+)(?:\s+"[^"]*")?\)/g, "<$2|$1>");
+  result = result.replace(/!\[([^\]]*)\]\(((?:[^()\s]|\([^()\s]*\))+)(?:\s+"[^"]*")?\)/g,
+    (_, t, u) => t.trim() ? `<${u}|${t}>` : `<${u}>`);
 
   // Links (URL allows one level of balanced parens, e.g. Wikipedia URLs)
   result = result.replace(/\[([^\]]+)\]\(((?:[^()\s]|\([^()\s]*\))+)(?:\s+"[^"]*")?\)/g, "<$2|$1>");
