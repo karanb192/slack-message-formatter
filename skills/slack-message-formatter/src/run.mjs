@@ -231,12 +231,17 @@ function protectListItemSpaces(html) {
 }
 
 function parseHTMLList(lines, startIdx, ordered, nested = false) {
-  const marker = ordered ? /^\s*\d+[.)]\s+/ : /^\s*[-*+]\s+/;
+  const marker = ordered ? /^\s*(\d+)[.)]\s+/ : /^\s*[-*+]\s+/;
   // Opposite-type marker at this level (indent 0 in the dedented recursion
   // frame) — deeper ones are consumed into subLines before the loop sees them.
   const sibling = ordered ? /^[-*+]\s+/ : /^\d+[.)]\s+/;
   const tag = ordered ? "ol" : "ul";
-  let html = `<${tag}>\n`;
+  // CommonMark: the first item's number sets the list start. Sibling flips
+  // (line below) recurse with startIdx on their own first marker, so each
+  // <ol> gets its own start.
+  const first = ordered ? lines[startIdx].match(marker) : null;
+  const startNum = first ? parseInt(first[1], 10) : 1;
+  let html = startNum !== 1 ? `<${tag} start="${startNum}">\n` : `<${tag}>\n`;
   let i = startIdx;
 
   while (i < lines.length) {

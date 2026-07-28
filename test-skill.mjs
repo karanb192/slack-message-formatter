@@ -1210,7 +1210,7 @@ test("Fence between ordered items stays in place, no duplicates", "html",
 <li>Second step:</li>
 </ol><br>
 <pre><code>kubectl apply -f config.yaml</code></pre><br>
-<ol>
+<ol start="3">
 <li>Third step</li>
 </ol>`);
 
@@ -1232,7 +1232,7 @@ test("Mixed markers stay in source order", "html",
 <ul>
 <li>note</li>
 </ul><br>
-<ol>
+<ol start="2">
 <li>Verify</li>
 </ol>`);
 
@@ -1407,6 +1407,63 @@ test("Top-level ul then ol are not duplicated", "html",
 <ol>
 <li>b</li>
 </ol>`);
+
+section("HTML: ordered list start attribute (issue #41)");
+
+test("List starting at 3 emits <ol start=\"3\">", "html",
+  "3. step three\n4. step four",
+  `<ol start="3">
+<li>step three</li>
+<li>step four</li>
+</ol>`);
+
+testContains("List starting at 1 stays a plain <ol>", "html",
+  "1. first\n2. second",
+  ["<ol>", "<li>first</li>", "<li>second</li>"],
+  ["start="]);
+
+test("List starting at 0 emits <ol start=\"0\">", "html",
+  "0. zero\n1. one",
+  `<ol start="0">
+<li>zero</li>
+<li>one</li>
+</ol>`);
+
+test("Leading zeros normalize in the start attribute", "html",
+  "07. seven\n08. eight",
+  `<ol start="7">
+<li>seven</li>
+<li>eight</li>
+</ol>`);
+
+test("Nested ordered sublist keeps its own start", "html",
+  "1. parent\n   3. sub three\n   4. sub four",
+  `<ol>
+<li>parent
+<ol start="3">
+<li>sub three</li>
+<li>sub four</li>
+</ol>
+</li>
+</ol>`);
+
+test("Sibling flip to ordered inside a nested level keeps start", "html",
+  "- parent\n  - u1\n  3. o3\n  4. o4",
+  `<ul>
+<li>parent
+<ul>
+<li>u1</li>
+</ul>
+<ol start="3">
+<li>o3</li>
+<li>o4</li>
+</ol>
+</li>
+</ul>`);
+
+test("mrkdwn path keeps the literal numbers", "mrkdwn",
+  "3. step three\n4. step four",
+  "3. step three\n4. step four");
 
 section("Real-world: Meeting Notes");
 
