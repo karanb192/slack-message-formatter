@@ -1730,6 +1730,71 @@ section("Table separator alignment with narrow columns (issue #37)");
     out, "html");
 }
 
+section("Table padding uses display width, not UTF-16 .length (issue #38)");
+
+{
+  // Pipe positions measured in monospace display columns — the same width
+  // model the fix uses (grapheme-wise; emoji-presentation/VS16/wide-CJK = 2).
+  const dwidth = (s) => {
+    let w = 0;
+    for (const { segment: g } of new Intl.Segmenter().segment(s)) {
+      const cp = g.codePointAt(0);
+      const wide = /\p{Emoji_Presentation}/u.test(g) || g.includes("\uFE0F") ||
+        (cp >= 0x1100 && cp <= 0x115f) || (cp >= 0x2e80 && cp <= 0xa4cf) ||
+        (cp >= 0xac00 && cp <= 0xd7a3) || (cp >= 0xf900 && cp <= 0xfaff) ||
+        (cp >= 0xff00 && cp <= 0xff60) || (cp >= 0x1f300 && cp <= 0x1faff) ||
+        (cp >= 0x20000 && cp <= 0x3fffd);
+      w += wide ? 2 : 1;
+    }
+    return w;
+  };
+  const pipeDisplayCols = (line) =>
+    line.split("|").slice(0, -1)
+      .map((_, k, parts) => dwidth(parts.slice(0, k + 1).join("|")))
+      .join(",");
+  const tableLines = (out) =>
+    out.replace("<pre><code>", "").replace("</code></pre>", "").split("\n");
+  const allAligned = (lines) => {
+    const head = pipeDisplayCols(lines[0]);
+    return head.length > 0 && lines.every(l => pipeDisplayCols(l) === head);
+  };
+
+  // Repro: BMP emoji ✅ is .length 1 but 2 display columns.
+  let lines = tableLines(run("html",
+    "| Status | Svc |\n| --- | --- |\n| ✅ ok | api |\n| pending | web |"));
+  check("Status-emoji cell keeps pipes at the same display column",
+    allAligned(lines), lines.join("\n"), "html");
+
+  // Repro: CJK — every ideograph is 2 columns, so 田中太郎 drifted 4.
+  lines = tableLines(run("html",
+    "| 名前 | Role |\n| --- | --- |\n| 田中太郎 | admin |\n| bob | user |"));
+  check("CJK cells keep pipes at the same display column",
+    allAligned(lines), lines.join("\n"), "html");
+  check("CJK separator row reaches the header pipe exactly",
+    lines[1].indexOf("|") === 9 && lines[0].indexOf("|") === 7 /* 名前=4cols+5sp */ &&
+    dwidth(lines[0].split("|")[0]) === dwidth(lines[1].split("|")[0]),
+    lines.join("\n"), "html");
+
+  // VS16 sequence: ⚠️ is 2 UTF-16 units but ONE grapheme, 2 columns.
+  lines = tableLines(run("html",
+    "| Level | N |\n| --- | --- |\n| ⚠️ warn | 4 |\n| info | 12 |"));
+  check("VS16 emoji (⚠️) counts as one wide grapheme",
+    allAligned(lines), lines.join("\n"), "html");
+
+  // ZWJ sequence: 👩‍💻 is 5 UTF-16 units but ONE grapheme, 2 columns.
+  lines = tableLines(run("html",
+    "| Who | Team |\n| --- | --- |\n| 👩‍💻 dev | eng |\n| alice | ops |"));
+  check("ZWJ emoji sequence counts as one wide grapheme",
+    allAligned(lines), lines.join("\n"), "html");
+
+  // ASCII-only tables must be byte-for-byte what they were before the fix.
+  const asciiOut = run("html",
+    "| Name | Age |\n| --- | --- |\n| Alice | 30 |\n| Bob | 7 |");
+  check("ASCII table output unchanged by display-width padding",
+    asciiOut.includes("Name  | Age\n------|----\nAlice | 30 \nBob   | 7"),
+    asciiOut, "html");
+}
+
 section("Real-world: Meeting Notes");
 
 const meetingMd = `## Meeting Notes

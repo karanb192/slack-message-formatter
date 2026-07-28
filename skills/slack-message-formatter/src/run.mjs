@@ -39,6 +39,40 @@ function escapeHtml(t) {
   return t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
+// Monospace display width — table padding must count terminal columns, not
+// UTF-16 code units, or emoji/CJK cells shift the pipes. Graphemes (ZWJ
+// sequences, VS16, combining marks) count once; wide if emoji-presentation
+// or in an East Asian Wide/Fullwidth range. Slack's font gives emoji a
+// non-integer advance, so emoji alignment stays approximate — width 2 is
+// strictly closer than .length and exact for CJK in true monospace.
+const GRAPHEME_SEGMENTER = new Intl.Segmenter();
+
+function isWideCodePoint(cp) {
+  return (
+    (cp >= 0x1100 && cp <= 0x115f) ||   // Hangul Jamo
+    (cp >= 0x2e80 && cp <= 0xa4cf) ||   // CJK radicals … Yi
+    (cp >= 0xac00 && cp <= 0xd7a3) ||   // Hangul syllables
+    (cp >= 0xf900 && cp <= 0xfaff) ||   // CJK compatibility ideographs
+    (cp >= 0xfe30 && cp <= 0xfe4f) ||   // CJK compatibility forms
+    (cp >= 0xff00 && cp <= 0xff60) ||   // Fullwidth forms
+    (cp >= 0xffe0 && cp <= 0xffe6) ||   // Fullwidth signs
+    (cp >= 0x1f300 && cp <= 0x1faff) || // emoji blocks
+    (cp >= 0x20000 && cp <= 0x3fffd)    // CJK extensions B+
+  );
+}
+
+function displayWidth(s) {
+  let w = 0;
+  for (const { segment: g } of GRAPHEME_SEGMENTER.segment(s)) {
+    const wide =
+      /\p{Emoji_Presentation}/u.test(g) || // ✅ ❌ 🚀 — emoji by default
+      g.includes("\uFE0F") ||         // ⚠️ — VS16 forces emoji look
+      isWideCodePoint(g.codePointAt(0));
+    w += wide ? 2 : 1;
+  }
+  return w;
+}
+
 function convertToHTML(md) {
   // Parse into typed blocks, then join with spacing rules — see the join at
   // the bottom of this function.
@@ -112,9 +146,9 @@ function convertToHTML(md) {
       // when mixed with other rich content (bold, lists, blockquotes).
       const colWidths = headerCells.map((h, j) => {
         const allCells = [h, ...bodyRows.map(r => (r[j] || ""))];
-        return Math.max(3, ...allCells.map(c => c.length));
+        return Math.max(3, ...allCells.map(displayWidth));
       });
-      const pad = (s, w) => s + " ".repeat(Math.max(0, w - s.length));
+      const pad = (s, w) => s + " ".repeat(Math.max(0, w - displayWidth(s)));
       let tableText = headerCells.map((h, j) => pad(h, colWidths[j])).join(" | ") + "\n";
       tableText += colWidths.map(w => "-".repeat(w)).join("-|-") + "\n";
       for (const row of bodyRows) {
