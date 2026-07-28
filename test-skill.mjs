@@ -1959,6 +1959,53 @@ test("html: __ in badge target URL survives emphasis shielding",
   "[![pkg](https://x.com/badge.svg)](https://x.com/pkg/__init__.py)",
   '<a href="https://x.com/pkg/__init__.py">pkg</a>');
 
+section("Empty-alt image falls back to URL text (issue #30)");
+
+test("html: empty alt uses URL as visible link text",
+  "html",
+  "![](https://example.com/dash.png)",
+  '<a href="https://example.com/dash.png">https://example.com/dash.png</a>');
+
+test("mrkdwn: empty alt emits bare autolink, not empty label",
+  "mrkdwn",
+  "![](https://example.com/dash.png)",
+  "<https://example.com/dash.png>");
+
+test("html: whitespace-only alt also falls back to URL",
+  "html",
+  "![ ](https://example.com/dash.png)",
+  '<a href="https://example.com/dash.png">https://example.com/dash.png</a>');
+
+test("mrkdwn: whitespace-only alt also falls back to URL",
+  "mrkdwn",
+  "![ ](https://example.com/dash.png)",
+  "<https://example.com/dash.png>");
+
+test("html: underscores in URL-as-text survive emphasis passes",
+  "html",
+  "![](https://example.com/_draft_/__init__.png)",
+  '<a href="https://example.com/_draft_/__init__.png">https://example.com/_draft_/__init__.png</a>');
+
+test("html: empty-alt badge uses outer target URL as text",
+  "html",
+  "[![](https://ci.example.com/badge.svg)](https://ci.example.com/builds/123)",
+  '<a href="https://ci.example.com/builds/123">https://ci.example.com/builds/123</a>');
+
+test("mrkdwn: empty-alt badge emits bare autolink to outer target",
+  "mrkdwn",
+  "[![](https://ci.example.com/badge.svg)](https://ci.example.com/builds/123)",
+  "<https://ci.example.com/builds/123>");
+
+test("html: empty-alt image inline with text and non-empty alt intact",
+  "html",
+  "See ![](https://x.com/a.png) and ![Alt](https://x.com/b.png) here.",
+  'See <a href="https://x.com/a.png">https://x.com/a.png</a> and <a href="https://x.com/b.png">Alt</a> here.');
+
+test("mrkdwn: empty-alt image inline with text and non-empty alt intact",
+  "mrkdwn",
+  "See ![](https://x.com/a.png) and ![Alt](https://x.com/b.png) here.",
+  "See <https://x.com/a.png> and <https://x.com/b.png|Alt> here.");
+
 section("Space-flanked bold delimiters stay literal (issue #33)");
 
 test("html: ** exponent operators pass through literally",
