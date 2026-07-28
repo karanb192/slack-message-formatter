@@ -1609,6 +1609,44 @@ testContains("Intro text before a list still attaches tightly (mrkdwn)", "mrkdwn
   "Intro:\n\n- item",
   ["Intro:\n• item"], []);
 
+section("Table separator must be a full-line GFM delimiter (issue #20)");
+
+testContains("Data row with dash-only first cell is not eaten as separator (html)", "html",
+  "| Mon | Tue |\n| - | Meeting with team |",
+  ["Meeting with team"], ["<pre><code>"]);
+
+testContains("Trailing text after a real separator is not deleted (html)", "html",
+  "| A | B |\n|---|---| IMPORTANT NOTE\n| 1 | 2 |",
+  ["IMPORTANT NOTE"], ["<pre><code>"]);
+
+testContains("Row with empty first cell does not vanish as separator (html)", "html",
+  "| Task | Owner |\n| | unassigned cleanup |\n| Deploy | Karan |",
+  ["unassigned cleanup"], ["<pre><code>"]);
+
+testContains("Valid plain separator still forms a table (html)", "html",
+  "| A | B |\n|---|---|\n| 1 | 2 |",
+  ["<pre><code>", "A", "1"], []);
+
+testContains("Valid alignment separator still forms a table (html)", "html",
+  "| A | B |\n| :--- | ---: |\n| 1 | 2 |",
+  ["<pre><code>", "A", "1"], []);
+
+testContains("Valid single-dash separator still forms a table (html)", "html",
+  "| A | B |\n| - | - |\n| 1 | 2 |",
+  ["<pre><code>", "A", "1"], []);
+
+testContains("Data row with dash-only first cell is not a separator (mrkdwn)", "mrkdwn",
+  "| Mon | Tue |\n| - | Meeting with team |",
+  ["Meeting with team"], ["```"]);
+
+testContains("Row with empty first cell does not form a table (mrkdwn)", "mrkdwn",
+  "| Task | Owner |\n| | unassigned cleanup |\n| Deploy | Karan |",
+  ["unassigned cleanup"], ["```"]);
+
+testContains("Valid table still becomes a code block (mrkdwn)", "mrkdwn",
+  "| A | B |\n|---|---|\n| 1 | 2 |",
+  ["```\n| A | B |\n|---|---|\n| 1 | 2 |\n```"], []);
+
 section("Real-world: Meeting Notes");
 
 const meetingMd = `## Meeting Notes
