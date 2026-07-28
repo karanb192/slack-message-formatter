@@ -344,6 +344,26 @@ testContains("Table-blockquote separation", "mrkdwn",
   ["```\n"],
   ["```>"]);
 
+section("mrkdwn: Table Trailing Spacing (issue #20 follow-up)");
+
+// Exactly one blank line after a table's closing fence, matching pre-#20
+// behavior — the stricter delimiter regex stopped swallowing the authored
+// blank line, doubling the gap.
+testContains("Table then blank line then paragraph keeps one blank line", "mrkdwn",
+  "| A | B |\n|---|---|\n| 1 | 2 |\n\nAfter text.",
+  ["```\n\nAfter text."],
+  ["```\n\n\nAfter text."]);
+
+testContains("Table then immediate text keeps one blank line", "mrkdwn",
+  "| A | B |\n|---|---|\n| 1 | 2 |\nNext line",
+  ["```\n\nNext line"],
+  ["```\n\n\nNext line"]);
+
+testContains("Multiple blank lines after table normalize to one", "mrkdwn",
+  "| A | B |\n|---|---|\n| 1 | 2 |\n\n\n\nAfter text.",
+  ["```\n\nAfter text."],
+  ["```\n\n\nAfter text."]);
+
 section("mrkdwn: Placeholder Restore (issues #16, #17)");
 
 // Inline code is extracted before tables, so a cell's placeholder ends up
