@@ -461,6 +461,13 @@ function inlineToHTML(text) {
     hrefs.push(u);
     return `\x00LH${hrefs.length - 1}\x00`;
   };
+  // Linked image [![alt](img)](target) — the badge pattern — first, in one
+  // pass: the image pass alone would emit an <a> the link pass then re-wraps
+  // (nested <a> is invalid; browsers split it and drop the outer target).
+  // The outer target is the link the user intended; the image URL is dropped,
+  // consistent with the image-as-link convention below.
+  text = text.replace(/\[!\[([^\]]*)\]\((?:[^()\s]|\([^()\s]*\))+(?:\s+"[^"]*")?\)\]\(((?:[^()\s]|\([^()\s]*\))+)(?:\s+"[^"]*")?\)/g,
+    (_, t, u) => `<a href="${saveHref(u)}">${t}</a>`);
   text = text.replace(/!\[([^\]]*)\]\(((?:[^()\s]|\([^()\s]*\))+)(?:\s+"[^"]*")?\)/g,
     (_, t, u) => `<a href="${saveHref(u)}">${t}</a>`);
   text = text.replace(/\[([^\]]+)\]\(((?:[^()\s]|\([^()\s]*\))+)(?:\s+"[^"]*")?\)/g,
@@ -610,6 +617,12 @@ function convertToMrkdwn(md) {
 
   // Now replace bold placeholders with actual *
   result = result.replace(/\x01/g, "*");
+
+  // Linked image [![alt](img)](target) — the badge pattern — first, in one
+  // pass: otherwise the link pass re-wraps the image's <img|alt> in a second,
+  // invalid nested <...|...>. Keep the outer (user-intended) target; the
+  // image URL is dropped, consistent with the image-as-link pass below.
+  result = result.replace(/\[!\[([^\]]*)\]\((?:[^()\s]|\([^()\s]*\))+(?:\s+"[^"]*")?\)\]\(((?:[^()\s]|\([^()\s]*\))+)(?:\s+"[^"]*")?\)/g, "<$2|$1>");
 
   // Images → links (URL allows one level of balanced parens, e.g. Wikipedia URLs)
   result = result.replace(/!\[([^\]]*)\]\(((?:[^()\s]|\([^()\s]*\))+)(?:\s+"[^"]*")?\)/g, "<$2|$1>");
