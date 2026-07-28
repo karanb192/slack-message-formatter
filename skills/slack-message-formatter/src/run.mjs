@@ -277,7 +277,11 @@ function parseHTMLList(lines, startIdx, ordered) {
 
     if (subLines.length > 0 && subLines.some(l => l.match(/^\s+[-*+]\s+/) || l.match(/^\s+\d+[.)]\s+/))) {
       const subOrdered = subLines.some(l => l.match(/^\s+\d+[.)]\s+/));
-      const dedented = subLines.map(l => l.replace(/^\s{2,4}/, ""));
+      // Strip only the block's common indent so relative indentation survives:
+      // a greedy per-line strip flattens third levels and orphans sub-item
+      // continuation lines in the recursive parse.
+      const indent = Math.min(...subLines.map(l => l.match(/^\s*/)[0].length));
+      const dedented = subLines.map(l => l.slice(indent));
       html += `<li>${protectListItemSpaces(inlineToHTML(content))}\n${parseHTMLList(dedented, 0, subOrdered)}</li>\n`;
     } else {
       // Plain continuation lines belong to this item — dropping them loses

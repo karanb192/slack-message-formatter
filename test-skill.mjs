@@ -1281,6 +1281,67 @@ test("One-space-indented sibling marker stays a separate item", "html",
 <li>gamma</li>
 </ul>`);
 
+section("HTML: nested 2-space list dedent (issue #26)");
+
+test("Sub-item continuation line preserved", "html",
+  "- parent item\n  - sub item\n    continuation of the sub item",
+  `<ul>
+<li>parent item
+<ul>
+<li>sub item continuation of the sub item</li>
+</ul>
+</li>
+</ul>`);
+
+test("Three-level 2-space list nests", "html",
+  "- level one\n  - level two\n    - level three",
+  `<ul>
+<li>level one
+<ul>
+<li>level two
+<ul>
+<li>level three</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>`);
+
+test("Three-level 4-space list still nests", "html",
+  "- level one\n    - level two\n        - level three",
+  `<ul>
+<li>level one
+<ul>
+<li>level two
+<ul>
+<li>level three</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>`);
+
+test("Sub-item continuation does not swallow next sub-item", "html",
+  "- parent\n  - first sub\n    wraps here\n  - second sub",
+  `<ul>
+<li>parent
+<ul>
+<li>first sub wraps here</li>
+<li>second sub</li>
+</ul>
+</li>
+</ul>`);
+
+test("Ordered sub-list continuation preserved", "html",
+  "1. parent\n   1. sub step\n      wrapped detail",
+  `<ol>
+<li>parent
+<ol>
+<li>sub step wrapped detail</li>
+</ol>
+</li>
+</ol>`);
+
 section("Real-world: Meeting Notes");
 
 const meetingMd = `## Meeting Notes
