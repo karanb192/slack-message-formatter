@@ -2188,6 +2188,54 @@ testContains("html: [XX] is not a task marker, stays a regular bullet",
   ["<li>[XX] not a task</li>"],
   ["&#x2705;"]);
 
+section("Entities stay literal inside inline code (issue #35)");
+
+// Per CommonMark, entity references aren't recognized in code spans — the
+// pill must show the literal characters, matching the fenced-block path.
+testContains("html: `&amp;` pill keeps literal five characters",
+  "html",
+  "Use `&amp;` not `&` in XML",
+  ["<code>&amp;amp;</code>", "<code>&amp;</code>"]);
+
+testContains("html: pill and fence render the same entity identically",
+  "html",
+  "Pill `&amp;` here\n\n```\n&amp;\n```",
+  ["<code>&amp;amp;</code>", "<pre><code>&amp;amp;</code></pre>"]);
+
+testContains("html: &lt;/&gt; entities in code span stay literal",
+  "html",
+  "type `use &lt;div&gt;` verbatim",
+  ["<code>use &amp;lt;div&amp;gt;</code>"],
+  ["<code>use &lt;div&gt;</code>"]);
+
+testContains("html: numeric entity in code span stays literal",
+  "html",
+  "char `&#65;` and hex `&#x41;`",
+  ["<code>&amp;#65;</code>", "<code>&amp;#x41;</code>"]);
+
+testContains("html: double-backtick span escapes entity literally",
+  "html",
+  "a ``&quot;x&quot; &amp; y`` b",
+  ["<code>&amp;quot;x&amp;quot; &amp;amp; y</code>"]);
+
+testContains("html: nested span keeps entity literal, single escape",
+  "html",
+  "`a ``b&amp;c`` d`",
+  ["<code>a <code>b&amp;amp;c</code> d</code>"],
+  ["&amp;amp;amp;"]);
+
+testContains("html: prose entity passthrough unaffected",
+  "html",
+  "ampersand &amp; arrows &lt; &gt; in prose",
+  ["ampersand &amp; arrows &lt; &gt; in prose"],
+  ["&amp;amp;", "&amp;lt;", "&amp;gt;"]);
+
+testContains("html: raw & and <div> in code still escaped exactly once",
+  "html",
+  "run `a && b` on `<div>`",
+  ["<code>a &amp;&amp; b</code>", "<code>&lt;div&gt;</code>"],
+  ["&amp;amp;", "&amp;lt;"]);
+
 section("Real-world: Meeting Notes");
 
 const meetingMd = `## Meeting Notes

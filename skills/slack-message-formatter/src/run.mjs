@@ -416,18 +416,15 @@ function inlineToHTML(text) {
   // Strip HTML comments before escaping
   text = text.replace(/<!--[\s\S]*?-->/g, "");
 
-  // Escape HTML
-  text = text.replace(/&(?!amp;|lt;|gt;|quot;|apos;|nbsp;|#x[0-9a-f]+;|#\d+;)/gi, "&amp;");
-  text = text.replace(/</g, "&lt;");
-  text = text.replace(/>/g, "&gt;");
-
   // Inline code — extract to opaque placeholders first (same scheme as the
   // mrkdwn path) so none of the emoji/link/bold/italic/token regexes below can
   // touch code content. Replacing in place isn't enough: the italic regexes
   // don't skip <code> tags, so a span like ` * ` would pair its asterisk with
-  // a later *italic* delimiter in the paragraph. Content is already
-  // HTML-escaped above; escaping again would render `<div>` as the literal
-  // text "&lt;div&gt;" in Slack. Both syntaxes trim inner padding — stray
+  // a later *italic* delimiter in the paragraph. Extraction runs on the RAW
+  // text, before the entity-passthrough escape below: per CommonMark, entity
+  // references aren't recognized in code spans, so `&amp;` must stay the
+  // literal five characters (escapeHtml escapes every & unconditionally,
+  // matching the fenced-block path). Both syntaxes trim inner padding — stray
   // spaces inside the pill leak into the pasted Slack code span — but a
   // whitespace-only span keeps its content instead of collapsing to an empty pill.
   const codeSpans = [];
@@ -436,15 +433,24 @@ function inlineToHTML(text) {
   const expandCodeSpans = (t) => t.replace(/\x00IC(\d+)\x00/g, (m, i) => codeSpans[+i] ?? m);
   const saveCodeSpan = (c) => {
     // A single-backtick pair can capture an already-extracted ``span`` (e.g.
-    // `a ``b`` c`). Expand its placeholder now — the one-pass restore below
-    // never rescans replacement text, so a nested placeholder would leak raw
-    // \x00 bytes into the page. Expanding reproduces main's nested-<code> output.
-    c = expandCodeSpans(c);
+    // `a ``b`` c`). Escape first (escapeHtml never touches \x00 placeholder
+    // bytes), then expand — expanding before escaping would double-escape the
+    // inner span's <code> tags. Expansion must happen now: the one-pass
+    // restore below never rescans replacement text, so a nested placeholder
+    // would leak raw \x00 bytes into the page.
+    c = expandCodeSpans(escapeHtml(c));
     codeSpans.push(`<code>${c.trim() || c}</code>`);
     return `\x00IC${codeSpans.length - 1}\x00`;
   };
   text = text.replace(/``([^`]+)``/g, (_, c) => saveCodeSpan(c));
   text = text.replace(/`([^`\n]+?)`/g, (_, c) => saveCodeSpan(c));
+
+  // Escape HTML — the ampersand lookahead passes pre-escaped entities in
+  // prose through unchanged (no double-escape). Code spans are already in
+  // placeholders, so the passthrough can't leak entity decoding into pills.
+  text = text.replace(/&(?!amp;|lt;|gt;|quot;|apos;|nbsp;|#x[0-9a-f]+;|#\d+;)/gi, "&amp;");
+  text = text.replace(/</g, "&lt;");
+  text = text.replace(/>/g, "&gt;");
 
   // Angle-bracket autolinks <https://…>/<mailto:…> and the Slack-labeled form
   // <url|label> — same token set the mrkdwn path protects — become real
