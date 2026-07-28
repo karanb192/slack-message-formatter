@@ -473,15 +473,16 @@ function inlineToHTML(text) {
   text = text.replace(/\[([^\]]+)\]\(((?:[^()\s]|\([^()\s]*\))+)(?:\s+"[^"]*")?\)/g,
     (_, t, u) => `<a href="${saveHref(u)}">${t}</a>`);
 
-  // Bold + Italic
-  text = text.replace(/\*\*\*(.+?)\*\*\*/gs, "<b><i>$1</i></b>");
+  // Bold + Italic — non-space content edges so space-flanked delimiters
+  // (e.g. the exponent operator in "2 ** 8") stay literal, per CommonMark
+  text = text.replace(/\*\*\*([^\s*](?:.*?[^\s*])?)\*\*\*/gs, "<b><i>$1</i></b>");
 
   // Bold
-  text = text.replace(/\*\*(.+?)\*\*/gs, "<b>$1</b>");
-  text = text.replace(/__(.+?)__/gs, "<b>$1</b>");
+  text = text.replace(/\*\*([^\s*](?:.*?[^\s*])?)\*\*/gs, "<b>$1</b>");
+  text = text.replace(/__([^\s_](?:.*?[^\s_])?)__/gs, "<b>$1</b>");
 
   // Strikethrough
-  text = text.replace(/~~(.+?)~~/gs, "<s>$1</s>");
+  text = text.replace(/~~([^\s~](?:.*?[^\s~])?)~~/gs, "<s>$1</s>");
 
   // Italic (*text*)
   text = text.replace(/(?<!\*)\*([^\s*](?:.*?[^\s*])?)\*(?!\*)/gs, "<i>$1</i>");
@@ -602,15 +603,16 @@ function convertToMrkdwn(md) {
   // 3. Italic (*) — convert to _
   // 4. Then replace placeholders
 
-  // Bold + Italic
-  result = result.replace(/\*\*\*(.+?)\*\*\*/gs, "_\x01$1\x01_");
+  // Bold + Italic — non-space content edges so space-flanked delimiters
+  // (e.g. the exponent operator in "2 ** 8") stay literal, per CommonMark
+  result = result.replace(/\*\*\*([^\s*](?:.*?[^\s*])?)\*\*\*/gs, "_\x01$1\x01_");
 
   // Bold — use placeholder \x01 instead of * to avoid italic regex matching it
-  result = result.replace(/\*\*(.+?)\*\*/gs, "\x01$1\x01");
-  result = result.replace(/__(.+?)__/gs, "\x01$1\x01");
+  result = result.replace(/\*\*([^\s*](?:.*?[^\s*])?)\*\*/gs, "\x01$1\x01");
+  result = result.replace(/__([^\s_](?:.*?[^\s_])?)__/gs, "\x01$1\x01");
 
   // Strikethrough
-  result = result.replace(/~~(.+?)~~/gs, "~$1~");
+  result = result.replace(/~~([^\s~](?:.*?[^\s~])?)~~/gs, "~$1~");
 
   // Italic (*text* → _text_)
   result = result.replace(/(?<!\x01)\*([^\s*](?:.*?[^\s*])?)\*(?!\x01)/gs, "_$1_");
