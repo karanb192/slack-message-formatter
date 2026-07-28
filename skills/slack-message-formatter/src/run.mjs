@@ -217,7 +217,14 @@ function convertToHTML(md) {
 }
 
 function parseTableRow(line) {
-  return line.replace(/^\|/, "").replace(/\|$/, "").split("|").map(c => c.trim());
+  // GFM: \| is the only way to put a literal pipe in a cell. Mask escaped
+  // pipes before splitting (a trailing \| must not be eaten as the row-closing
+  // delimiter), then restore them as literal pipes per cell. \x00 is safe as
+  // a sentinel — control bytes are stripped from input at entry.
+  const masked = line.replace(/\\\|/g, "\x00");
+  return masked.replace(/^\|/, "").replace(/\|$/, "")
+    .split("|")
+    .map(c => c.trim().replace(/\x00/g, "|"));
 }
 
 function parseTableAlign(line) {
