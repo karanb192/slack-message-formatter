@@ -1342,6 +1342,72 @@ test("Ordered sub-list continuation preserved", "html",
 </li>
 </ol>`);
 
+section("HTML: mixed-type nested lists (issue #27)");
+
+test("ol > ul > ol keeps every level", "html",
+  "1. ordered one\n   - bullet two\n     1. ordered three",
+  `<ol>
+<li>ordered one
+<ul>
+<li>bullet two
+<ol>
+<li>ordered three</li>
+</ol>
+</li>
+</ul>
+</li>
+</ol>`);
+
+test("ul > ul > ol keeps the middle bullet", "html",
+  "- alpha\n  - beta\n    1. gamma",
+  `<ul>
+<li>alpha
+<ul>
+<li>beta
+<ol>
+<li>gamma</li>
+</ol>
+</li>
+</ul>
+</li>
+</ul>`);
+
+test("ul > ol > ul keeps every level", "html",
+  "- alpha\n  1. beta\n     - gamma",
+  `<ul>
+<li>alpha
+<ol>
+<li>beta
+<ul>
+<li>gamma</li>
+</ul>
+</li>
+</ol>
+</li>
+</ul>`);
+
+test("Mixed-type siblings inside a nested level both survive", "html",
+  "1. a\n   1. x\n   - y",
+  `<ol>
+<li>a
+<ol>
+<li>x</li>
+</ol>
+<ul>
+<li>y</li>
+</ul>
+</li>
+</ol>`);
+
+test("Top-level ul then ol are not duplicated", "html",
+  "- a\n1. b",
+  `<ul>
+<li>a</li>
+</ul><br>
+<ol>
+<li>b</li>
+</ol>`);
+
 section("Real-world: Meeting Notes");
 
 const meetingMd = `## Meeting Notes

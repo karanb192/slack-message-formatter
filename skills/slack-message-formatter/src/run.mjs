@@ -230,8 +230,11 @@ function protectListItemSpaces(html) {
     .replace(/(<\/(?:b|i|s|code|a)>) /g, "$1&#160;");
 }
 
-function parseHTMLList(lines, startIdx, ordered) {
+function parseHTMLList(lines, startIdx, ordered, nested = false) {
   const marker = ordered ? /^\s*\d+[.)]\s+/ : /^\s*[-*+]\s+/;
+  // Opposite-type marker at this level (indent 0 in the dedented recursion
+  // frame) — deeper ones are consumed into subLines before the loop sees them.
+  const sibling = ordered ? /^[-*+]\s+/ : /^\d+[.)]\s+/;
   const tag = ordered ? "ol" : "ul";
   let html = `<${tag}>\n`;
   let i = startIdx;
@@ -242,6 +245,13 @@ function parseHTMLList(lines, startIdx, ordered) {
 
     const m = line.match(marker);
     if (!m) {
+      // In a recursion, an opposite-type item at this level starts a sibling
+      // list — close this tag and parse the rest as the other type. Top-level
+      // calls must leave it alone: the outer block parser stops its advance
+      // there and would emit the sibling list a second time.
+      if (nested && line.match(sibling)) {
+        return html + `</${tag}>\n` + parseHTMLList(lines, i, !ordered, true);
+      }
       // Indented continuation/sub-item — skip; anything else ends the list
       // here, exactly where the outer advance loop stops, so the interrupting
       // line and the items after it are parsed once by the outer parser.
@@ -276,13 +286,17 @@ function parseHTMLList(lines, startIdx, ordered) {
     }
 
     if (subLines.length > 0 && subLines.some(l => l.match(/^\s+[-*+]\s+/) || l.match(/^\s+\d+[.)]\s+/))) {
-      const subOrdered = subLines.some(l => l.match(/^\s+\d+[.)]\s+/));
       // Strip only the block's common indent so relative indentation survives:
       // a greedy per-line strip flattens third levels and orphans sub-item
       // continuation lines in the recursive parse.
       const indent = Math.min(...subLines.map(l => l.match(/^\s*/)[0].length));
       const dedented = subLines.map(l => l.slice(indent));
-      html += `<li>${protectListItemSpaces(inlineToHTML(content))}\n${parseHTMLList(dedented, 0, subOrdered)}</li>\n`;
+      // The sublist's type comes from its first marker line — an ordered
+      // grandchild must not flip an unordered level to <ol> (its items would
+      // then never match the marker and the recursion would drop them).
+      const firstMarker = dedented.find(l => l.match(/^\s*[-*+]\s+/) || l.match(/^\s*\d+[.)]\s+/));
+      const subOrdered = /^\s*\d+[.)]\s+/.test(firstMarker);
+      html += `<li>${protectListItemSpaces(inlineToHTML(content))}\n${parseHTMLList(dedented, 0, subOrdered, true)}</li>\n`;
     } else {
       // Plain continuation lines belong to this item — dropping them loses
       // content. Join with a space (Markdown soft-wrap semantics): a <br>
