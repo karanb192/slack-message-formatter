@@ -88,8 +88,10 @@ function convertToHTML(md) {
       continue;
     }
 
-    // Table
-    if (line.match(/^\|/) && i + 1 < lines.length && lines[i + 1].match(/^\|[\s:|-]+\|/)) {
+    // Table — the separator must be a full-line GFM delimiter row (every cell
+    // only `:?-+:?`), otherwise a data row starting with a dash-only or empty
+    // cell would be consumed as the separator and silently dropped.
+    if (line.match(/^\|/) && i + 1 < lines.length && lines[i + 1].match(/^\|(?:\s*:?-+:?\s*\|)+\s*$/)) {
       const headerCells = parseTableRow(line);
       const alignLine = lines[i + 1];
       const aligns = parseTableAlign(alignLine);
@@ -483,7 +485,7 @@ function convertToMrkdwn(md) {
 
   // Tables → code blocks (keep separator for visual structure)
   result = result.replace(
-    /(\|.+\|\s*\n)(\|[\s:|-]+\|\s*\n)((?:\|.+\|\s*\n?)*)/g,
+    /(\|.+\|[^\S\n]*\n)(\|(?:[^\S\n]*:?-+:?[^\S\n]*\|)+[^\S\n]*\n)((?:\|.+\|[^\S\n]*\n?)*)/g,
     (_, header, sep, body) => {
       const idx = codeBlocks.length;
       codeBlocks.push("```\n" + (header + sep + body).trim() + "\n```\n");
