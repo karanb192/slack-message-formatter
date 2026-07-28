@@ -1647,6 +1647,39 @@ testContains("Valid table still becomes a code block (mrkdwn)", "mrkdwn",
   "| A | B |\n|---|---|\n| 1 | 2 |",
   ["```\n| A | B |\n|---|---|\n| 1 | 2 |\n```"], []);
 
+section("Escaped pipe \\| inside table cells (issue #36)");
+
+testContains("Escaped pipe stays inside its cell as a literal | (html)", "html",
+  "| Type | Default |\n| --- | --- |\n| string \\| number | none |",
+  ["string | number", "none"], ["\\"]);
+
+{
+  // Column pairing: "none" must land under the "Default" header, not in a
+  // phantom third column past it.
+  const out = run("html",
+    "| Type | Default |\n| --- | --- |\n| string \\| number | none |");
+  const lines = out.replace("<pre><code>", "").split("\n");
+  check("Escaped pipe keeps column pairing (none under Default)",
+    lines[0].indexOf("Default") === lines[2].indexOf("none"),
+    out, "html");
+}
+
+testContains("Trailing \\| is not eaten as the row-closing delimiter (html)", "html",
+  "| A | B |\n| --- | --- |\n| a\\| | c\\|d |",
+  ["a|", "c|d"], ["\\"]);
+
+testContains("Escaped pipe in a header cell (html)", "html",
+  "| A \\| B | C |\n| --- | --- |\n| 1 | 2 |",
+  ["A | B"], ["\\"]);
+
+testContains("Escaped pipe inside an inline-code cell (html)", "html",
+  "| Type | Default |\n| --- | --- |\n| `string \\| number` | none |",
+  ["`string | number`"], ["\\"]);
+
+testContains("mrkdwn table fence keeps the row verbatim", "mrkdwn",
+  "| Type | Default |\n| --- | --- |\n| string \\| number | none |",
+  ["```", "| string \\| number | none |"], []);
+
 section("Real-world: Meeting Notes");
 
 const meetingMd = `## Meeting Notes
