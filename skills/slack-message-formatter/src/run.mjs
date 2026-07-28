@@ -451,11 +451,11 @@ function inlineToHTML(text) {
   text = text.replace(/:[\w+-]+:/g, (match) =>
     EMOJI_MAP[match] || match.replace(/_/g, "\x02")); // protect underscores in unknown emoji
 
-  // Images
-  text = text.replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, '<a href="$2">$1</a>');
+  // Images (URL allows one level of balanced parens, e.g. Wikipedia URLs)
+  text = text.replace(/!\[([^\]]*)\]\(((?:[^()\s]|\([^()\s]*\))+)(?:\s+"[^"]*")?\)/g, '<a href="$2">$1</a>');
 
-  // Links
-  text = text.replace(/\[([^\]]+)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, '<a href="$2">$1</a>');
+  // Links (URL allows one level of balanced parens, e.g. Wikipedia URLs)
+  text = text.replace(/\[([^\]]+)\]\(((?:[^()\s]|\([^()\s]*\))+)(?:\s+"[^"]*")?\)/g, '<a href="$2">$1</a>');
 
   // Bold + Italic
   text = text.replace(/\*\*\*(.+?)\*\*\*/gs, "<b><i>$1</i></b>");
@@ -583,11 +583,11 @@ function convertToMrkdwn(md) {
   // Now replace bold placeholders with actual *
   result = result.replace(/\x01/g, "*");
 
-  // Images → links
-  result = result.replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, "<$2|$1>");
+  // Images → links (URL allows one level of balanced parens, e.g. Wikipedia URLs)
+  result = result.replace(/!\[([^\]]*)\]\(((?:[^()\s]|\([^()\s]*\))+)(?:\s+"[^"]*")?\)/g, "<$2|$1>");
 
-  // Links
-  result = result.replace(/\[([^\]]+)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, "<$2|$1>");
+  // Links (URL allows one level of balanced parens, e.g. Wikipedia URLs)
+  result = result.replace(/\[([^\]]+)\]\(((?:[^()\s]|\([^()\s]*\))+)(?:\s+"[^"]*")?\)/g, "<$2|$1>");
 
   // Task lists
   result = result.replace(/^(\s*)[-*+]\s+\[x\]\s+/gm, "$1:white_check_mark: ");
