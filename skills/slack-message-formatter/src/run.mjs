@@ -588,9 +588,12 @@ function convertToMrkdwn(md) {
     return `\x00IC${idx}\x00`;
   });
 
-  // Tables → code blocks (keep separator for visual structure)
+  // Tables → code blocks (keep separator for visual structure). The trailing
+  // \n* swallows authored blank lines after the table — the stored block plus
+  // the placeholder's \n already supply exactly one blank line before what
+  // follows, so an unswallowed blank would double the gap.
   result = result.replace(
-    /(\|.+\|[^\S\n]*\n)(\|(?:[^\S\n]*:?-+:?[^\S\n]*\|)+[^\S\n]*\n)((?:\|.+\|[^\S\n]*\n?)*)/g,
+    /(\|.+\|[^\S\n]*\n)(\|(?:[^\S\n]*:?-+:?[^\S\n]*\|)+[^\S\n]*\n)((?:\|.+\|[^\S\n]*\n?)*)\n*/g,
     (_, header, sep, body) => {
       const idx = codeBlocks.length;
       codeBlocks.push("```\n" + (header + sep + body).trim() + "\n```\n");
