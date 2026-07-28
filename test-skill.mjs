@@ -1900,6 +1900,65 @@ test("mrkdwn: emphasis outside the link is unaffected by URL shielding",
   "__bold__ then [x](https://x.com/a__b) then __more__",
   "*bold* then <https://x.com/a__b|x> then *more*");
 
+section("Linked image / badge pattern (issue #23)");
+
+test("html: badge links to outer target, single anchor",
+  "html",
+  "[![Build Status](https://ci.example.com/badge.svg)](https://ci.example.com/builds/123)",
+  '<a href="https://ci.example.com/builds/123">Build Status</a>');
+
+test("mrkdwn: badge links to outer target, single link",
+  "mrkdwn",
+  "[![Build Status](https://ci.example.com/badge.svg)](https://ci.example.com/builds/123)",
+  "<https://ci.example.com/builds/123|Build Status>");
+
+testContains("html: no nested <a> and no image-URL anchor",
+  "html",
+  "[![Build Status](https://ci.example.com/badge.svg)](https://ci.example.com/builds/123)",
+  ['href="https://ci.example.com/builds/123"'],
+  ['href="https://ci.example.com/badge.svg"', "</a></a>"]);
+
+test("html: titles on image and target are both dropped",
+  "html",
+  'See [![Coverage](https://img.example.com/cov.svg "cov")](https://cov.example.com/repo "repo") now.',
+  'See <a href="https://cov.example.com/repo">Coverage</a> now.');
+
+test("mrkdwn: titles on image and target are both dropped",
+  "mrkdwn",
+  'See [![Coverage](https://img.example.com/cov.svg "cov")](https://cov.example.com/repo "repo") now.',
+  "See <https://cov.example.com/repo|Coverage> now.");
+
+test("html: balanced parens in image and target URLs",
+  "html",
+  "[![b](https://x.com/badge_(v2).svg)](https://en.wikipedia.org/wiki/OCaml_(programming_language))",
+  '<a href="https://en.wikipedia.org/wiki/OCaml_(programming_language)">b</a>');
+
+test("mrkdwn: balanced parens in image and target URLs",
+  "mrkdwn",
+  "[![b](https://x.com/badge_(v2).svg)](https://en.wikipedia.org/wiki/OCaml_(programming_language))",
+  "<https://en.wikipedia.org/wiki/OCaml_(programming_language)|b>");
+
+test("html: badge inline with plain image and plain link on same line",
+  "html",
+  "[![CI](https://x.com/ci.svg)](https://x.com/builds) plus ![Alt](https://x.com/i.png) and [docs](https://x.com/docs)",
+  '<a href="https://x.com/builds">CI</a> plus <a href="https://x.com/i.png">Alt</a> and <a href="https://x.com/docs">docs</a>');
+
+test("mrkdwn: badge inline with plain image and plain link on same line",
+  "mrkdwn",
+  "[![CI](https://x.com/ci.svg)](https://x.com/builds) plus ![Alt](https://x.com/i.png) and [docs](https://x.com/docs)",
+  "<https://x.com/builds|CI> plus <https://x.com/i.png|Alt> and <https://x.com/docs|docs>");
+
+testContains("html: empty-alt badge still avoids nested anchors",
+  "html",
+  "[![](https://ci.example.com/badge.svg)](https://ci.example.com/builds/123)",
+  ['href="https://ci.example.com/builds/123"'],
+  ["</a></a>"]);
+
+test("html: __ in badge target URL survives emphasis shielding",
+  "html",
+  "[![pkg](https://x.com/badge.svg)](https://x.com/pkg/__init__.py)",
+  '<a href="https://x.com/pkg/__init__.py">pkg</a>');
+
 section("Real-world: Meeting Notes");
 
 const meetingMd = `## Meeting Notes
