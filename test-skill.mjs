@@ -1838,6 +1838,68 @@ test("mrkdwn: two parenthesized-URL links on one line both close correctly",
   "[A](https://w.org/A_(x)) and [B](https://w.org/B_(y))",
   "<https://w.org/A_(x)|A> and <https://w.org/B_(y)|B>");
 
+section("Emphasis must not rewrite link URLs (issue #24)");
+
+test("html: __dunder__ filename in href survives untouched",
+  "html",
+  "See [entry point](https://github.com/acme/repo/blob/main/pkg/__init__.py) here.",
+  'See <a href="https://github.com/acme/repo/blob/main/pkg/__init__.py">entry point</a> here.');
+
+test("mrkdwn: __dunder__ filename in link URL survives untouched",
+  "mrkdwn",
+  "See [entry point](https://github.com/acme/repo/blob/main/pkg/__init__.py) here.",
+  "See <https://github.com/acme/repo/blob/main/pkg/__init__.py|entry point> here.");
+
+test("html: __ in two URLs must not pair across hrefs",
+  "html",
+  "See [a](https://x.com/a__b.py) and [c](https://x.com/c__d.py) today.",
+  'See <a href="https://x.com/a__b.py">a</a> and <a href="https://x.com/c__d.py">c</a> today.');
+
+test("mrkdwn: __ in two URLs must not pair across links",
+  "mrkdwn",
+  "See [a](https://x.com/a__b.py) and [c](https://x.com/c__d.py) today.",
+  "See <https://x.com/a__b.py|a> and <https://x.com/c__d.py|c> today.");
+
+test("html: /_segment_/ path is not italicized in href",
+  "html",
+  "See [the draft](https://example.com/foo/_draft_/page) now.",
+  'See <a href="https://example.com/foo/_draft_/page">the draft</a> now.');
+
+test("mrkdwn: /_segment_/ path is not italicized in link URL",
+  "mrkdwn",
+  "See [the draft](https://example.com/foo/_draft_/page) now.",
+  "See <https://example.com/foo/_draft_/page|the draft> now.");
+
+test("html: dunder docs anchor kept in href",
+  "html",
+  "Docs: [call](https://docs.python.org/3/reference/datamodel.html#object.__call__)",
+  'Docs: <a href="https://docs.python.org/3/reference/datamodel.html#object.__call__">call</a>');
+
+test("html: image URL with __ stays intact",
+  "html",
+  "![shot](https://cdn.example.com/img__final__.png)",
+  '<a href="https://cdn.example.com/img__final__.png">shot</a>');
+
+test("mrkdwn: image URL with __ stays intact",
+  "mrkdwn",
+  "![shot](https://cdn.example.com/img__final__.png)",
+  "<https://cdn.example.com/img__final__.png|shot>");
+
+test("html: emphasis still applies to link text, never the href",
+  "html",
+  "Click [**bold link**](https://x.com/__a__) and *after*.",
+  'Click <a href="https://x.com/__a__"><b>bold link</b></a> and <i>after</i>.');
+
+test("html: emphasis outside the link is unaffected by URL shielding",
+  "html",
+  "__bold__ then [x](https://x.com/a__b) then __more__",
+  '<b>bold</b> then <a href="https://x.com/a__b">x</a> then <b>more</b>');
+
+test("mrkdwn: emphasis outside the link is unaffected by URL shielding",
+  "mrkdwn",
+  "__bold__ then [x](https://x.com/a__b) then __more__",
+  "*bold* then <https://x.com/a__b|x> then *more*");
+
 section("Real-world: Meeting Notes");
 
 const meetingMd = `## Meeting Notes
