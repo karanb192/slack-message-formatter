@@ -227,6 +227,36 @@ testContains("HTML comment stripped", "html",
   "Before <!-- comment --> After",
   ["Before"], ["comment"]);
 
+section("HTML: Line-leading comments keep trailing text (issue #29)");
+
+test("Line-leading comment keeps trailing text", "html",
+  "<!-- c --> After",
+  "After");
+
+testContains("Comment prefix in paragraph keeps sentence", "html",
+  "First para.\n\n<!-- reviewed --> Release is live now.\n\nLast para.",
+  ["First para.", "Release is live now.", "Last para."], ["reviewed"]);
+
+testContains("Multiline comment keeps text after close", "html",
+  "<!-- open\nstill comment --> Trailing text",
+  ["Trailing text"], ["still comment"]);
+
+test("Comment on its own line still fully stripped", "html",
+  "<!-- c -->\nAfter",
+  "After");
+
+testContains("Two comments on one line both stripped", "html",
+  "<!-- a --> mid <!-- b --> end",
+  ["mid", "end"], ["<!--"]);
+
+testContains("Comment-like text inside fence untouched", "html",
+  "```\n<!-- not a comment -->\n```",
+  ["&lt;!-- not a comment --&gt;"]);
+
+test("Unterminated comment strips to end", "html",
+  "<!-- never closed\nmore text",
+  "");
+
 // =============================================================
 // MRKDWN TESTS
 // =============================================================
