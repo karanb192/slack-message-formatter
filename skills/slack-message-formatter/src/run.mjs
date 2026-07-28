@@ -174,7 +174,9 @@ function convertToHTML(md) {
     // Paragraph
     const paraLines = [line];
     i++;
-    while (i < lines.length && lines[i].trim() && !lines[i].match(/^(#{1,6}\s|```|>\s?|\s*[-*+]\s|\s*\d+[.)]\s|\|.*\||\s*---|\s*\*\*\*|\s*___)/)) {
+    // Only "1."/"1)" may interrupt a paragraph (CommonMark) — protects
+    // wrapped prose like "founded in\n2024. It was..." from becoming a list.
+    while (i < lines.length && lines[i].trim() && !lines[i].match(/^(#{1,6}\s|```|>\s?|\s*[-*+]\s|\s*1[.)]\s|\|.*\||\s*---|\s*\*\*\*|\s*___)/)) {
       paraLines.push(lines[i]);
       i++;
     }
