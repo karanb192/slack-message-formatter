@@ -2153,6 +2153,41 @@ test("mrkdwn: raw autolink still preserved alongside html fix",
   "Docs at <https://example.com/docs> here",
   "Docs at <https://example.com/docs> here");
 
+section("Uppercase [X] task marker (issue #31)");
+
+test("html: uppercase [X] renders as checked task",
+  "html",
+  "- [X] Done task",
+  "&#x2705; Done task");
+
+testContains("html: mixed [X]/[ ] list stays a task list, no <ul>",
+  "html",
+  "- [X] uppercase done task\n- [ ] pending",
+  ["&#x2705; uppercase done task", "&#x1F532; pending"],
+  ["<ul>", "<li>", "[X]"]);
+
+testContains("html: uppercase [X] task nested in regular list gets emoji",
+  "html",
+  "- regular item\n  - [X] nested done",
+  ["<li>regular item", "&#x2705; nested done"],
+  ["[X]"]);
+
+test("mrkdwn: uppercase [X] renders as :white_check_mark:",
+  "mrkdwn",
+  "- [X] Done task",
+  ":white_check_mark: Done task");
+
+test("mrkdwn: mixed [X]/[ ] list keeps both task emojis",
+  "mrkdwn",
+  "- [X] uppercase done task\n- [ ] pending",
+  ":white_check_mark: uppercase done task\n:black_square_button: pending");
+
+testContains("html: [XX] is not a task marker, stays a regular bullet",
+  "html",
+  "- [XX] not a task",
+  ["<li>[XX] not a task</li>"],
+  ["&#x2705;"]);
+
 section("Real-world: Meeting Notes");
 
 const meetingMd = `## Meeting Notes

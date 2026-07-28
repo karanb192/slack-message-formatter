@@ -170,12 +170,12 @@ function convertToHTML(md) {
     }
 
     // Task list — handle before regular list to avoid wrapping in <li>
-    if (line.match(/^\s*[-*+]\s+\[[ x]\]\s+/)) {
+    if (line.match(/^\s*[-*+]\s+\[[ xX]\]\s+/)) {
       const taskLines = [];
-      while (i < lines.length && lines[i].match(/^\s*[-*+]\s+\[[ x]\]\s+/)) {
-        const tm = lines[i].match(/^\s*[-*+]\s+\[( |x)\]\s+(.*)/);
+      while (i < lines.length && lines[i].match(/^\s*[-*+]\s+\[[ xX]\]\s+/)) {
+        const tm = lines[i].match(/^\s*[-*+]\s+\[( |[xX])\]\s+(.*)/);
         if (tm) {
-          const emoji = tm[1] === "x" ? "&#x2705;" : "&#x1F532;";
+          const emoji = tm[1].toLowerCase() === "x" ? "&#x2705;" : "&#x1F532;";
           taskLines.push(`${emoji} ${inlineToHTML(tm[2])}`);
         }
         i++;
@@ -321,9 +321,9 @@ function parseHTMLList(lines, startIdx, ordered, nested = false) {
     let content = line.replace(marker, "");
 
     // Task list item inside a regular list — emit without <li> to avoid double bullet
-    const taskMatch = content.match(/^\[( |x)\]\s+(.*)/);
+    const taskMatch = content.match(/^\[( |[xX])\]\s+(.*)/);
     if (taskMatch) {
-      const emoji = taskMatch[1] === "x" ? "&#x2705;" : "&#x1F532;";
+      const emoji = taskMatch[1].toLowerCase() === "x" ? "&#x2705;" : "&#x1F532;";
       html += `${emoji} ${inlineToHTML(taskMatch[2])}<br>\n`;
       i++;
       continue;
@@ -689,7 +689,7 @@ function convertToMrkdwn(md) {
   result = result.replace(/\x00LU(\d+)\x00/g, (m, i) => linkUrls[+i] ?? m);
 
   // Task lists
-  result = result.replace(/^(\s*)[-*+]\s+\[x\]\s+/gm, "$1:white_check_mark: ");
+  result = result.replace(/^(\s*)[-*+]\s+\[[xX]\]\s+/gm, "$1:white_check_mark: ");
   result = result.replace(/^(\s*)[-*+]\s+\[ \]\s+/gm, "$1:black_square_button: ");
 
   // Unordered list bullets
