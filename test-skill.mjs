@@ -1680,6 +1680,56 @@ testContains("mrkdwn table fence keeps the row verbatim", "mrkdwn",
   "| Type | Default |\n| --- | --- |\n| string \\| number | none |",
   ["```", "| string \\| number | none |"], []);
 
+section("Table separator alignment with narrow columns (issue #37)");
+
+{
+  const pipeCols = (line) => {
+    const idx = [];
+    for (let k = 0; k < line.length; k++) if (line[k] === "|") idx.push(k);
+    return idx.join(",");
+  };
+
+  // Minimal repro: 1-char columns drifted the separator pipe right by 2.
+  const out = run("html", "| A | B |\n| --- | --- |\n| 1 | 2 |");
+  const lines = out.replace("<pre><code>", "").replace("</code></pre>", "").split("\n");
+  check("1-char columns: separator pipe under header pipe",
+    pipeCols(lines[1]) === pipeCols(lines[0]),
+    out, "html");
+  check("1-char columns: separator pipe under data pipe",
+    pipeCols(lines[1]) === pipeCols(lines[2]),
+    out, "html");
+  check("Narrow column separator keeps the 3-dash floor",
+    /^-{3,}\|/.test(lines[1]),
+    out, "html");
+}
+
+{
+  // Realistic variant: a "#" rank column next to wide columns — drift
+  // compounded left to right across every following pipe.
+  const out = run("html",
+    "| # | Name | Age |\n| --- | --- | --- |\n| 1 | Alice | 30 |\n| 2 | Bob | 25 |");
+  const lines = out.replace("<pre><code>", "").replace("</code></pre>", "").split("\n");
+  const cols = (line) => {
+    const idx = [];
+    for (let k = 0; k < line.length; k++) if (line[k] === "|") idx.push(k);
+    return idx.join(",");
+  };
+  const headerCols = cols(lines[0]);
+  check("Rank column table: all rows share pipe positions",
+    lines.slice(1).every(l => cols(l) === headerCols) && headerCols.length > 0,
+    out, "html");
+}
+
+{
+  // Columns already >= 3 chars wide were aligned before — must stay aligned.
+  const out = run("html", "| Name | Age |\n|------|-----|\n| Alice | 30 |");
+  const lines = out.replace("<pre><code>", "").replace("</code></pre>", "").split("\n");
+  check("Wide columns keep exact pipe alignment",
+    lines[0].indexOf("|") === lines[1].indexOf("|") &&
+    lines[1].indexOf("|") === lines[2].indexOf("|"),
+    out, "html");
+}
+
 section("Real-world: Meeting Notes");
 
 const meetingMd = `## Meeting Notes

@@ -112,11 +112,11 @@ function convertToHTML(md) {
       // when mixed with other rich content (bold, lists, blockquotes).
       const colWidths = headerCells.map((h, j) => {
         const allCells = [h, ...bodyRows.map(r => (r[j] || ""))];
-        return Math.max(...allCells.map(c => c.length));
+        return Math.max(3, ...allCells.map(c => c.length));
       });
       const pad = (s, w) => s + " ".repeat(Math.max(0, w - s.length));
       let tableText = headerCells.map((h, j) => pad(h, colWidths[j])).join(" | ") + "\n";
-      tableText += colWidths.map(w => "-".repeat(Math.max(w, 3))).join("-|-") + "\n";
+      tableText += colWidths.map(w => "-".repeat(w)).join("-|-") + "\n";
       for (const row of bodyRows) {
         tableText += row.map((c, j) => pad(c || "", colWidths[j])).join(" | ") + "\n";
       }
