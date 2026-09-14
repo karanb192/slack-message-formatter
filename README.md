@@ -2,12 +2,12 @@
 
 A Claude Code skill that formats messages for Slack with pixel-perfect accuracy. Converts standard Markdown to Slack-compatible output with two delivery paths:
 
-1. **Copy-paste** — Rich HTML that preserves formatting when pasted into Slack's compose box
-2. **API/Webhook** — Slack mrkdwn syntax for bots, automation, and CI/CD
+1. **Copy-paste**: rich HTML that preserves formatting when pasted into Slack's compose box
+2. **API/Webhook**: Slack mrkdwn syntax for bots, automation, and CI/CD
 
 ## Why?
 
-- Slack uses **mrkdwn** (not Markdown). `**bold**` doesn't work — you need `*bold*`.
+- Slack uses **mrkdwn** (not Markdown). `**bold**` doesn't work, you need `*bold*`.
 - Existing tools handle conversion well, but none combine **generation + preview + copy-paste** in one workflow.
 - Programmatic clipboard doesn't preserve tables in Slack. Manual browser copy does.
 - This skill gives you both paths: copy-paste for humans, webhook for bots.
@@ -154,7 +154,7 @@ Markdown → Parser → Dual Renderer
 ```
 
 1. **You write Markdown** (or Claude generates it)
-2. **The converter transforms it** deterministically — same input always produces same output
+2. **The converter transforms it** deterministically, so the same input always produces the same output
 3. **Two outputs**: Rich HTML for copy-paste, mrkdwn for API
 
 Tables are rendered as aligned code blocks because Slack's paste handler breaks HTML `<table>` tags when mixed with other rich content.
@@ -165,8 +165,8 @@ Through extensive testing, we discovered:
 
 - **Programmatic clipboard** (Clipboard API, `execCommand`, `osascript`) **does not reliably preserve formatting** when pasting into Slack
 - **Manual browser copy** (`Cmd+A`, `Cmd+C` from a rendered HTML page) **works perfectly** for all formatting including tables
-- **HTML tables break** in Slack paste when mixed with other rich content (bold, lists, blockquotes) — even with manual copy. Tables must be code blocks.
-- **Slack's paste handler trims spaces around inline formatting inside list items** — `<li>with <b>bold</b> and</li>` pastes as "withboldand". The converter emits `&#160;` around inline tags in list items; Slack normalizes it back to a regular space.
+- **HTML tables break** in Slack paste when mixed with other rich content (bold, lists, blockquotes), even with manual copy. Tables must be code blocks.
+- **Slack's paste handler trims spaces around inline formatting inside list items**: `<li>with <b>bold</b> and</li>` pastes as "withboldand". The converter emits `&#160;` around inline tags in list items; Slack normalizes it back to a regular space.
 - **A `<br>` inside `<li>` makes Slack flatten the whole list** to plain paragraphs. Multi-line list items are joined with spaces (Markdown soft-wrap semantics) so lists stay native.
 - **150+ emoji shortcodes** (`:tada:`, `:rocket:`, etc.) are converted to Unicode for browser preview
 
@@ -186,20 +186,20 @@ Comprehensive test suite with 232+ tests covering:
 ## Known Limitations
 
 - **Bare URLs** (`https://example.com` without link syntax) are not auto-linked. Use `[text](url)` syntax. Slack auto-links bare URLs when sent via API anyway.
-- **Relative links** (`[Docs](/path)`) are ignored — only `http://`, `https://`, and `mailto:` links are converted.
+- **Relative links** (`[Docs](/path)`) are ignored. Only `http://`, `https://`, and `mailto:` links are converted.
 - **Deeply nested parenthesized URLs** like `(a_(b_(c)))` may not parse correctly. Single-level parens (e.g. Wikipedia URLs) work fine.
 - **Tables in copy-paste** render as code blocks. Slack's WYSIWYG editor does not reliably accept HTML `<table>` tags when pasted alongside other rich content.
-- **`snake_case` text** is safe — underscores inside words are not misinterpreted as italic.
+- **`snake_case` text** is safe, underscores inside words are not misinterpreted as italic.
 
 ## Acknowledgements
 
 Built on the shoulders of great tools in the Slack formatting ecosystem:
 
-- [slackify-markdown](https://www.npmjs.com/package/slackify-markdown) — the most popular Markdown-to-mrkdwn converter (207k weekly downloads). Inspired our mrkdwn conversion approach.
-- [sirkitree/slack-markdown-formatter](https://github.com/sirkitree/slack-markdown-formatter) — a Claude Code skill that pioneered teaching Claude Slack formatting rules.
-- [ccheney/robust-skills](https://github.com/ccheney/robust-skills) — comprehensive mrkdwn and Block Kit skills for Claude Code.
-- [slackdown.com](https://slackdown.com) — web-based converter with HTML copy support.
-- [Slack's official docs](https://api.slack.com/reference/surfaces/formatting) — the mrkdwn specification.
+- [slackify-markdown](https://www.npmjs.com/package/slackify-markdown): the most popular Markdown-to-mrkdwn converter (207k weekly downloads). Inspired our mrkdwn conversion approach.
+- [sirkitree/slack-markdown-formatter](https://github.com/sirkitree/slack-markdown-formatter): a Claude Code skill that pioneered teaching Claude Slack formatting rules.
+- [ccheney/robust-skills](https://github.com/ccheney/robust-skills): comprehensive mrkdwn and Block Kit skills for Claude Code.
+- [slackdown.com](https://slackdown.com): web-based converter with HTML copy support.
+- [Slack's official docs](https://api.slack.com/reference/surfaces/formatting): the mrkdwn specification.
 
 This tool adds **browser preview + copy-paste + table support** on top of the conversion these tools pioneered.
 

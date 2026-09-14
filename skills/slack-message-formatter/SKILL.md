@@ -13,8 +13,8 @@ description: |
 
 Format messages for Slack with pixel-perfect accuracy. Converts Markdown to Slack-compatible output with two delivery paths:
 
-1. **Copy-paste** — Rich HTML that preserves formatting when pasted into Slack's compose box
-2. **API/Webhook** — Slack mrkdwn syntax for bots, automation, and CI/CD
+1. **Copy-paste**: rich HTML that preserves formatting when pasted into Slack's compose box
+2. **API/Webhook**: Slack mrkdwn syntax for bots, automation, and CI/CD
 
 ## When to use this skill
 
@@ -28,12 +28,12 @@ Format messages for Slack with pixel-perfect accuracy. Converts Markdown to Slac
 
 ### Step 1: Generate content in Markdown
 
-Always generate the message content in **standard Markdown**. This is your native format and you produce it reliably. Use all Markdown features freely — the converter handles everything:
+Always generate the message content in **standard Markdown**. This is your native format and you produce it reliably. Use all Markdown features freely, because the converter handles everything:
 
 - `**bold**`, `*italic*`, `~~strikethrough~~`, `` `code` ``
 - `[text](url)` links
 - `# Headings` (converted to bold in Slack)
-- Tables (pipe syntax — converted to HTML tables for paste, code blocks for API)
+- Tables (pipe syntax, converted to HTML tables for paste, code blocks for API)
 - `- [ ]` / `- [x]` task lists (converted to emoji checkboxes)
 - `---` horizontal rules (converted to unicode separator)
 - Nested lists, blockquotes, code blocks with language hints
@@ -57,7 +57,7 @@ This will:
 - Open the copy page in the user's browser
 - Print both file paths for future reference
 
-Note: the script does NOT touch the clipboard — programmatic clipboard writes
+Note: the script does NOT touch the clipboard, because programmatic clipboard writes
 don't survive Slack's paste handler. The user copies manually from the browser.
 
 ### Step 3: Report to user
@@ -114,7 +114,7 @@ Slack uses **mrkdwn** (not Markdown). Key differences:
 ## Content Guidelines
 
 **These are hard rules, not suggestions. Slack messages produced by this skill
-must be super concise and structured — never paragraphs of prose.**
+must be super concise and structured, never paragraphs of prose.**
 
 - **Default to a thread starter.** Open with `🧵 for <topic>:` and go straight
   into points, unless the user says the message is standalone or is a reply
@@ -126,26 +126,31 @@ must be super concise and structured — never paragraphs of prose.**
 - **Hard length caps.** Headline: one line. Context: one line. Bullets: 2-5,
   each a single line (no wrapping walls of text inside a bullet). Closing
   `**Impact:**` / `**Ask:**` / `**Next:**` line: one line. If the content
-  doesn't fit, cut detail — don't add paragraphs. Link out for depth instead
+  doesn't fit, cut detail instead of adding paragraphs. Link out for depth instead
   of inlining it.
 - **Cut ruthlessly.** No preamble ("I wanted to share…", "Quick update on…"),
   no filler ("as you may know", "just", "basically"), no restating the
   headline in the context line, no sign-offs. Lead with the point.
+- **If an anti-slop or tell-taxonomy skill is available in this environment,
+  load it** and apply it on top of these rules. It is optional: when no such
+  skill exists, the rules in this section stand on their own. Do not delegate
+  compression to a technical-writing skill built for manuals, since those ban
+  contractions and Slack reads stiff without them.
 - **NEVER use em dashes (—).** They scream AI-generated. Use a comma, a
   period, a colon, or parentheses instead. This applies to every sentence,
   including headlines and bullets. Plain hyphens in ranges (`12:30-2:00 PM`)
   and compound words are fine.
 - **Always hyperlink ticket IDs and PR references.** Never write bare `ENG-12345`
-  or `#123` — always use `[ENG-12345](https://yoursite.atlassian.net/browse/ENG-12345)`
+  or `#123`. Always use `[ENG-12345](https://yoursite.atlassian.net/browse/ENG-12345)`
   or `[PR #123](url)`. This applies to every occurrence, not just the first.
-  If `JIRA_BASE_URL` is set, the converter auto-links bare Jira keys for you —
+  If `JIRA_BASE_URL` is set, the converter auto-links bare Jira keys for you,
   but explicit links in the Markdown are still preferred (they survive with
   any configuration and let you control the link target).
 - **Use blank lines between blocks.** Headline, context, bullet group, and
-  closing line are each their own block with a blank line between — Slack
+  closing line are each their own block with a blank line between, because Slack
   collapses adjacent lines together without spacing.
 - **Only go longer if the user explicitly asks** for a detailed / verbose
-  version. Even then, keep the structure — more bullets and sections, not prose.
+  version. Even then, keep the structure: more bullets and sections, not prose.
 
 ## Default Message Structure
 
@@ -214,20 +219,20 @@ One line of context (with a link if relevant).
 
 Slack mention tokens (`<@U012AB3CD>`, `<#C012AB3CD>`, `<!here>`, `<!channel>`,
 `<!everyone>`) **only resolve via the API/webhook path**. They do NOT resolve
-when pasted into Slack's compose box — Slack renders them as literal text.
+when pasted into Slack's compose box. Slack renders them as literal text.
 
 - **Copy-paste path:** write mentions as plain `@DisplayName` (e.g., `@Shakti`).
   Tell the user they'll need to re-type the `@` after pasting so Slack's
   autocomplete kicks in and links the user. Never emit `<@U...>` syntax on this
   path. (Defensively, the HTML converter renders any stray `<@U...>` / `<#C...>` /
-  `<!here>` token as visible `@`/`#` text instead of raw `<@U...>` noise — but
+  `<!here>` token as visible `@`/`#` text instead of raw `<@U...>` noise, but
   it still won't notify anyone.)
 - **API/Webhook path (`send`):** use `<@U012AB3CD>` / `<#C012AB3CD>` / `<!here>`
   as-is. The converter preserves them and Slack resolves them server-side.
 
 ## Important Notes
 
-- **Always generate Markdown first**, then convert. Never generate mrkdwn or HTML directly — the converter is deterministic and correct, LLM output of these formats is not.
+- **Always generate Markdown first**, then convert. Never generate mrkdwn or HTML directly, because the converter is deterministic and correct while LLM output of these formats is not.
 - **Slack mention tokens only resolve on the API/webhook path.** See the "Mentions" section above for the per-path rules.
 - **Tables work via the HTML copy-paste path** but not via mrkdwn (Slack has no table syntax). Tables are converted to code blocks in the mrkdwn output.
 - **Preview files are timestamped** so users can revisit them from conversation history.
