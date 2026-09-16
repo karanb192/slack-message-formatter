@@ -238,9 +238,19 @@ function convertToHTML(md) {
     result += html;
     if (k < blocks.length - 1) {
       const next = blocks[k + 1][0];
-      const attached = type === "text" && (next === "list" || next === "tasks" || next === "pre");
+      // A code block is an unambiguous block element to Slack's paste
+      // parser, so a bare newline before <pre> is enough. A <ul>/<ol> is
+      // not: with no <br> terminating the inline run that introduces it,
+      // Slack folds that run into the first <li>, producing
+      // "Heading textFirst bullet..." on paste. One <br> ends the line
+      // without opening a blank one, so the lead-in keeps its own line and
+      // the list still renders as a native, indented Slack list.
+      const attached = type === "text" && next === "pre";
+      const introducesList = type === "text" && (next === "list" || next === "tasks");
       if (attached) {
         result += "\n";
+      } else if (introducesList) {
+        result += "<br>\n";
       } else {
         const endsBlock = /(?:<\/(?:ul|ol|pre|blockquote)>|<hr>)$/.test(html);
         result += endsBlock ? "<br>\n" : "<br><br>\n";
