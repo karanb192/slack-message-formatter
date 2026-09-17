@@ -3,10 +3,14 @@ name: slack-message-formatter
 description: |
   Format messages for Slack with pixel-perfect accuracy. Converts Markdown to
   rich HTML (for copy-paste into Slack) or Slack mrkdwn (for API/webhook).
-  Use when the user asks to write a Slack message, announcement, or notification,
-  format something "for Slack", preview how content looks in Slack, or send a
-  message via Slack webhook. Also trigger when user mentions Slack formatting,
-  mrkdwn, or wants to share Markdown content in Slack channels.
+  Use for ANY text the user will put into Slack: a message, thread reply, DM,
+  announcement, notification, status update, or a "quick" one-liner. Trigger on
+  "slack message", "reply on the thread", "message for the channel", "post this
+  in slack", "send via webhook", "format for slack", mrkdwn, or previewing how
+  content looks in Slack. Shortness is not a reason to skip this skill, and
+  neither is the user never saying the word "format": a hand-written Slack
+  message loses the structure rules and the paste-safe HTML this skill produces.
+  Invoke it BEFORE writing any message text, not after.
 ---
 
 # Slack Message Formatter
@@ -19,10 +23,15 @@ Format messages for Slack with pixel-perfect accuracy. Converts Markdown to Slac
 ## When to use this skill
 
 - User asks to write a Slack message, announcement, or notification
+- User asks for a thread reply, a DM, or a short update they will paste into Slack
 - User asks to format something "for Slack"
 - User wants to preview how a message will look in Slack
 - User wants to send a message via Slack webhook
 - User has Markdown content they want to share in Slack
+
+Invoke the skill before drafting any message text. A one-line reply still goes
+through the converter: the structure rules and the paste-safe HTML are the point,
+and both are lost when the message is written by hand in chat instead.
 
 ## Workflow
 
