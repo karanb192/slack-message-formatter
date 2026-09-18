@@ -7,7 +7,7 @@
  * Run: node test-skill.mjs
  */
 
-import { execSync, spawn } from "child_process";
+import { execSync, spawn, spawnSync } from "child_process";
 import { createServer } from "http";
 import { mkdtempSync, readdirSync, readFileSync, rmSync } from "fs";
 import { tmpdir } from "os";
@@ -24,20 +24,17 @@ let pass = 0;
 let fail = 0;
 
 function run(cmd, input, env = {}) {
-  try {
-    // Use heredoc to avoid shell interpretation of backticks, <, >, etc.
-    const envPrefix = Object.entries(env)
-      .map(([k, v]) => `${k}='${v}'`)
-      .join(" ");
-    const shellCmd = `${envPrefix} node ${RUN} ${cmd} <<'TESTEOF'\n${input}\nTESTEOF`;
-    return execSync(shellCmd, {
-      encoding: "utf-8",
-      stdio: ["pipe", "pipe", "pipe"],
-      shell: "/bin/bash",
-    }).trim();
-  } catch (e) {
-    return e.stdout ? e.stdout.trim() : `ERROR: ${e.message}`;
+  // Pass args/env directly to avoid shell interpolation (no shell, no string-built command).
+  const result = spawnSync(process.execPath, [RUN, cmd], {
+    input,
+    encoding: "utf-8",
+    stdio: ["pipe", "pipe", "pipe"],
+    env: { ...process.env, ...env },
+  });
+  if (result.status !== 0 && result.stdout === "") {
+    return `ERROR: ${result.stderr || result.error?.message}`;
   }
+  return result.stdout.trim();
 }
 
 function test(name, cmd, input, expected, env = {}) {
