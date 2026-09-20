@@ -640,22 +640,23 @@ testContains("Paragraphs separated by one blank line", "html",
   "First para.\n\nSecond para.",
   ["First para.<br><br>\nSecond para."]);
 
-testContains("Paragraph attaches to following list", "html",
+testContains("Paragraph introducing a list keeps its own line", "html",
   "Intro line:\n\n- a\n- b",
-  ["Intro line:\n<ul>"],
-  ["Intro line:<br>"]);
+  ["Intro line:<br>\n<ul>"],
+  ["Intro line:\n<ul>", "Intro line:<br><br>"]);
 
-testContains("Heading attaches to following list", "html",
+testContains("Heading introducing a list keeps its own line", "html",
   "## Changes\n\n- a",
-  ["<b>Changes</b>\n<ul>"],
-  ["<b>Changes</b><br>"]);
+  ["<b>Changes</b><br>\n<ul>"],
+  ["<b>Changes</b>\n<ul>", "<b>Changes</b><br><br>"]);
 
 testContains("Paragraph attaches to following code block", "html",
   "Run this:\n\n```\nls\n```",
   ["Run this:\n<pre><code>ls</code></pre>"]);
 
-testContains("Paragraph attaches to following task list", "html",
+testContains("Paragraph introducing a task list keeps its own line", "html",
   "Status:\n\n- [x] done",
+  ["Status:<br>\n&#x2705; done"],
   ["Status:\n&#x2705; done"]);
 
 testContains("List followed by paragraph gets a blank line", "html",
@@ -1269,7 +1270,7 @@ test("Plain line between bullets splits list, items appear once", "html",
   `<ul>
 <li>a</li>
 </ul><br>
-x
+x<br>
 <ul>
 <li>b</li>
 </ul>`);
@@ -1531,7 +1532,7 @@ test("Paren marker with number != 1 does not interrupt either", "html",
 
 test("'1.' still interrupts a paragraph", "html",
   "Steps:\n1. First\n2. Second",
-  `Steps:
+  `Steps:<br>
 <ol>
 <li>First</li>
 <li>Second</li>
@@ -1539,7 +1540,7 @@ test("'1.' still interrupts a paragraph", "html",
 
 test("'1)' still interrupts a paragraph", "html",
   "Steps:\n1) First\n2) Second",
-  `Steps:
+  `Steps:<br>
 <ol>
 <li>First</li>
 <li>Second</li>
@@ -1547,7 +1548,7 @@ test("'1)' still interrupts a paragraph", "html",
 
 test("After a blank line any number still starts a list", "html",
   "Intro paragraph.\n\n2024. first\n2025. second",
-  `Intro paragraph.
+  `Intro paragraph.<br>
 <ol start="2024">
 <li>first</li>
 <li>second</li>
