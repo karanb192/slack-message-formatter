@@ -35,6 +35,12 @@ and both are lost when the message is written by hand in chat instead.
 
 ## Workflow
 
+Requires Node.js 20 or newer. Resolve `src/run.mjs` relative to the directory
+containing this `SKILL.md`, using the installed skill path supplied by the agent.
+Set `SLACK_FORMATTER_ROOT` to that absolute directory in each shell invocation.
+It is a shell variable you set, not an environment variable supplied by Codex or
+Claude Code. The user's current project need not contain the formatter repo.
+
 ### Step 1: Generate content in Markdown
 
 Always generate the message content in **standard Markdown**. This is your native format and you produce it reliably. Use all Markdown features freely, because the converter handles everything:
@@ -53,8 +59,9 @@ Always generate the message content in **standard Markdown**. This is your nativ
 Run the converter script to transform the Markdown:
 
 ```bash
-# Generate preview page + copy to clipboard
-node skills/slack-message-formatter/src/run.mjs preview <<'MARKDOWN'
+# Replace this path with the directory containing the loaded SKILL.md.
+SLACK_FORMATTER_ROOT='/absolute/path/to/slack-message-formatter'
+node "$SLACK_FORMATTER_ROOT/src/run.mjs" preview <<'MARKDOWN'
 <paste the markdown here>
 MARKDOWN
 ```
@@ -83,7 +90,8 @@ Tell the user:
 If the user wants to send directly to Slack via webhook:
 
 ```bash
-node skills/slack-message-formatter/src/run.mjs send <<'MARKDOWN'
+SLACK_FORMATTER_ROOT='/absolute/path/to/slack-message-formatter'
+node "$SLACK_FORMATTER_ROOT/src/run.mjs" send <<'MARKDOWN'
 <paste the markdown here>
 MARKDOWN
 ```

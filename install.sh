@@ -1,9 +1,13 @@
 #!/bin/bash
 # Install slack-message-formatter skill
 #
-# Claude Code (recommended):
+# Claude Code plugin (recommended for Claude Code):
 #   claude plugin marketplace add karanb192/slack-message-formatter
 #   claude plugin install slack-message-formatter@slack-message-formatter
+#
+# Codex CLI plugin (recommended for Codex):
+#   codex plugin marketplace add karanb192/slack-message-formatter
+#   codex plugin add slack-message-formatter@slack-message-formatter
 #
 # Manual install (Claude Code or Codex):
 #   curl -sSL https://raw.githubusercontent.com/karanb192/slack-message-formatter/main/install.sh | bash
@@ -15,6 +19,7 @@ set -e
 REPO="https://github.com/karanb192/slack-message-formatter.git"
 TMP=$(mktemp -d)
 TARGET="${1:-claude}"
+AGENT="claude"
 
 echo "Installing slack-message-formatter..."
 
@@ -22,15 +27,16 @@ git clone --depth 1 --quiet "$REPO" "$TMP"
 
 case "$TARGET" in
   codex)
+    AGENT="codex"
     CODEX_DIR="${CODEX_HOME:-$HOME/.codex}"
     DEST="$CODEX_DIR/skills/slack-message-formatter"
     mkdir -p "$CODEX_DIR/skills"
     ;;
   project)
-    # Detect tool: check for .claude/ or .codex/ in current dir
-    if [ -d ".codex" ]; then
-      DEST=".codex/skills/slack-message-formatter"
-      mkdir -p .codex/skills
+    if [ -d ".codex" ] || [ -d ".agents/skills" ]; then
+      AGENT="codex"
+      DEST=".agents/skills/slack-message-formatter"
+      mkdir -p .agents/skills
     else
       DEST=".claude/skills/slack-message-formatter"
       mkdir -p .claude/skills
@@ -54,9 +60,10 @@ rm -rf "$TMP"
 
 echo "Installed to $DEST"
 echo ""
-if echo "$DEST" | grep -q codex; then
+if [ "$AGENT" = "codex" ]; then
   echo "Restart Codex to load the skill."
+  echo 'Usage: ask to "format a Slack message" or use $slack-message-formatter'
 else
   echo "Restart Claude Code or run /reload-plugins to load the skill."
+  echo "Usage: ask to 'format a Slack message' or run /slack-message-formatter"
 fi
-echo "Usage: ask to 'format a Slack message' or run /slack-message-formatter"

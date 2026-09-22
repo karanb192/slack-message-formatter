@@ -1,0 +1,4 @@
+interface:
+  display_name: "Slack Message Formatter"
+  short_description: "Format Slack messages with a browser preview"
+  default_prompt: "Use $slack-message-formatter to format a Slack message and open a preview."

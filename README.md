@@ -1,6 +1,6 @@
 # Slack Message Formatter
 
-A Claude Code skill that formats messages for Slack with pixel-perfect accuracy. Converts standard Markdown to Slack-compatible output with two delivery paths:
+A skill for Claude Code and Codex CLI that converts Markdown to Slack-compatible output with two delivery paths:
 
 1. **Copy-paste**: rich HTML that preserves formatting when pasted into Slack's compose box
 2. **API/Webhook**: Slack mrkdwn syntax for bots, automation, and CI/CD
@@ -12,24 +12,45 @@ A Claude Code skill that formats messages for Slack with pixel-perfect accuracy.
 - Programmatic clipboard doesn't preserve tables in Slack. Manual browser copy does.
 - This skill gives you both paths: copy-paste for humans, webhook for bots.
 
-Zero dependencies. 232+ tests. Built for Claude Code.
+Zero runtime dependencies. Requires Node.js 20 or newer. Install with a native plugin or the [skills CLI](https://skills.sh/docs).
 
 ![Demo](demo.gif)
 
 ## Install
 
-### Claude Code (recommended)
+### Claude Code plugin
 
 ```bash
 claude plugin marketplace add karanb192/slack-message-formatter
 claude plugin install slack-message-formatter@slack-message-formatter
 ```
 
-### Codex
+### Codex CLI plugin (recommended for Codex)
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/karanb192/slack-message-formatter/main/install.sh | bash -s codex
+codex plugin marketplace add karanb192/slack-message-formatter
+codex plugin add slack-message-formatter@slack-message-formatter
 ```
+
+Start a new Codex session, then ask it to format a Slack message. Use a current
+Codex CLI with the `codex plugin` commands. If your version lacks them, update
+Codex or use the skills CLI below.
+
+### Standalone skill via skills.sh
+
+Install for Codex across your projects with Node.js/npm and Git available:
+
+```bash
+npx skills add karanb192/slack-message-formatter --skill slack-message-formatter --agent codex --global
+```
+
+Omit `--global` to install into the current project's `.agents/skills` directory.
+Choose either this route or the Codex plugin to avoid duplicate skills.
+
+The skill stays in this GitHub repo. [skills.sh lists skills through install
+telemetry](https://skills.sh/docs/faq#how-do-i-get-my-skill-listed-on-the-leaderboard),
+so no separate package upload is needed. The native plugins and skills CLI all
+use `skills/slack-message-formatter/`.
 
 ### Manual install (curl)
 
@@ -46,9 +67,18 @@ curl -sSL https://raw.githubusercontent.com/karanb192/slack-message-formatter/ma
 
 ### Updating
 
-The marketplace tracks the `main` branch of this repo. Claude Code auto-updates marketplace plugins at startup, so most users will pick up changes on their next restart.
+For the Codex plugin, refresh the marketplace and install the current version,
+then start a new session:
 
-To refresh immediately without restarting:
+```bash
+codex plugin marketplace upgrade slack-message-formatter
+codex plugin add slack-message-formatter@slack-message-formatter
+```
+
+For a skills CLI install, rerun its install command above. For a shell install,
+rerun the corresponding `install.sh` command.
+
+For the Claude Code plugin, refresh the marketplace inside Claude Code:
 
 ```
 /plugin marketplace update slack-message-formatter
@@ -58,21 +88,37 @@ To refresh immediately without restarting:
 ### Uninstall
 
 ```bash
-# Claude Code
-rm -rf ~/.claude/skills/slack-message-formatter
+# Codex plugin
+codex plugin remove slack-message-formatter@slack-message-formatter
 
-# Codex
-rm -rf "${CODEX_HOME:-$HOME/.codex}/skills/slack-message-formatter"
+# skills CLI global install (omit --global for a project install)
+npx skills remove slack-message-formatter --agent codex --global
+
+# Claude Code plugin
+claude plugin uninstall slack-message-formatter@slack-message-formatter
 ```
 
-Then in Claude Code, just ask:
+For a shell install, remove only the `slack-message-formatter` directory at the
+path printed by the installer. Codex global shell installs use
+`${CODEX_HOME:-$HOME/.codex}/skills/slack-message-formatter`; Claude Code global
+shell installs use `~/.claude/skills/slack-message-formatter`.
+
+### Use the skill
+
+In Claude Code or a new Codex session, ask:
+
 - "Write a Slack message announcing our v2.5 release"
 - "Format this for Slack"
-- `/slack-message-formatter`
+
+For explicit invocation, use `$slack-message-formatter` in Codex or
+`/slack-message-formatter` in Claude Code.
 
 ### Standalone CLI
 
+From a clone of this repo:
+
 ```bash
+cd skills/slack-message-formatter
 echo '**bold** and *italic*' | node src/run.mjs html
 # → <b>bold</b> and <i>italic</i>
 
@@ -153,7 +199,7 @@ Markdown → Parser → Dual Renderer
                     └── mrkdwn   → Webhook → Slack API
 ```
 
-1. **You write Markdown** (or Claude generates it)
+1. **You write Markdown** (or your agent generates it)
 2. **The converter transforms it** deterministically, so the same input always produces the same output
 3. **Two outputs**: Rich HTML for copy-paste, mrkdwn for API
 
@@ -174,14 +220,19 @@ Through extensive testing, we discovered:
 
 ```bash
 node test-skill.mjs   # from repo root
+node --test test-distribution.mjs
 ```
 
-Comprehensive test suite with 232+ tests covering:
+The formatter suite runs 434 checks covering:
+
 - Both HTML and mrkdwn output for every feature
 - Emoji shortcode conversion (85+ verified individually)
 - Nested formatting, edge cases, unclosed markers
 - Real-world messages (deployment, incident, meeting notes, code review, sprint summary)
 - Special character escaping, Windows line endings
+
+The distribution suite checks package paths, conversion outside the repo, and
+project installation for Codex and Claude Code.
 
 ## Known Limitations
 
