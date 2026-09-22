@@ -1,0 +1,23 @@
+{
+  "name": "slack-message-formatter",
+  "version": "1.2.0",
+  "description": "Convert Markdown to rich HTML for pasting into Slack or mrkdwn for webhooks.",
+  "author": {
+    "name": "Karan Bansal",
+    "url": "https://github.com/karanb192"
+  },
+  "repository": "https://github.com/karanb192/slack-message-formatter",
+  "license": "MIT",
+  "keywords": ["slack", "mrkdwn", "markdown", "formatter", "copy-paste", "webhook"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Slack Message Formatter",
+    "shortDescription": "Format Slack messages with a browser preview",
+    "longDescription": "Draft Slack messages, preview rich HTML for manual copy-paste, or convert Markdown to mrkdwn for webhooks. Requires Node.js 20 or newer.",
+    "developerName": "Karan Bansal",
+    "category": "Productivity",
+    "capabilities": ["Write"],
+    "websiteURL": "https://github.com/karanb192/slack-message-formatter",
+    "defaultPrompt": ["Format a release announcement for Slack and open a preview."]
+  }
+}
