@@ -1,9 +1,13 @@
 #!/bin/bash
 # Install slack-message-formatter skill
 #
-# Claude Code (recommended):
+# Claude Code plugin (recommended for Claude Code):
 #   claude plugin marketplace add karanb192/slack-message-formatter
 #   claude plugin install slack-message-formatter@slack-message-formatter
+#
+# Codex CLI plugin (recommended for Codex):
+#   codex plugin marketplace add karanb192/slack-message-formatter
+#   codex plugin add slack-message-formatter@slack-message-formatter
 #
 # Manual install (Claude Code or Codex):
 #   curl -sSL https://raw.githubusercontent.com/karanb192/slack-message-formatter/main/install.sh | bash
@@ -29,8 +33,7 @@ case "$TARGET" in
     mkdir -p "$CODEX_DIR/skills"
     ;;
   project)
-    # Detect tool: check for .claude/ or .codex/ in current dir
-    if [ -d ".codex" ]; then
+    if [ -d ".codex" ] || [ -d ".agents/skills" ]; then
       AGENT="codex"
       DEST=".agents/skills/slack-message-formatter"
       mkdir -p .agents/skills

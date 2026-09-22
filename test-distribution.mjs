@@ -58,28 +58,35 @@ test('a standalone installed skill works outside the formatter repository', t =>
   assert.match(preview, /preview-.*\.html/);
 });
 
-test('the shell installer uses the discoverable Codex project directory', t => {
-  const temp = mkdtempSync(join(tmpdir(), 'slack-shell-install-'));
-  t.after(() => rmSync(temp, { recursive: true, force: true }));
-  const project = join(temp, 'project');
-  const bin = join(temp, 'bin');
-  mkdirSync(join(project, '.codex'), { recursive: true });
-  mkdirSync(bin);
-  // Replace only the network clone; exercise the real install script and payload.
-  writeFileSync(join(bin, 'git'), '#!/bin/sh\nfor arg do dest="$arg"; done\ncp -R "$SLACK_TEST_REPO/skills" "$dest/skills"\n', { mode: 0o755 });
-  const result = spawnSync('bash', [join(repo, 'install.sh'), 'project'], {
-    cwd: project,
-    encoding: 'utf8',
-    env: { ...process.env, PATH: `${bin}${delimiter}${process.env.PATH}`, SLACK_TEST_REPO: repo },
+for (const [marker, agent, destination] of [
+  ['.codex', 'Codex', '.agents/skills'],
+  ['.agents/skills', 'Codex', '.agents/skills'],
+  ['.claude', 'Claude Code', '.claude/skills'],
+  ['.agents/plugins', 'Claude Code', '.claude/skills'],
+]) {
+  test(`the shell installer selects ${agent} for a project with ${marker}`, t => {
+    const temp = mkdtempSync(join(tmpdir(), 'slack-shell-install-'));
+    t.after(() => rmSync(temp, { recursive: true, force: true }));
+    const project = join(temp, 'project');
+    const bin = join(temp, 'bin');
+    mkdirSync(join(project, marker), { recursive: true });
+    mkdirSync(bin);
+    // Replace only the network clone; exercise the real install script and payload.
+    writeFileSync(join(bin, 'git'), '#!/bin/sh\nfor arg do dest="$arg"; done\ncp -R "$SLACK_TEST_REPO/skills" "$dest/skills"\n', { mode: 0o755 });
+    const result = spawnSync('bash', [join(repo, 'install.sh'), 'project'], {
+      cwd: project,
+      encoding: 'utf8',
+      env: { ...process.env, PATH: `${bin}${delimiter}${process.env.PATH}`, SLACK_TEST_REPO: repo },
+    });
+    assert.equal(result.status, 0, result.stderr);
+    assert.ok(result.stdout.includes(`Restart ${agent}`));
+    assert.ok(result.stdout.includes(`${agent === 'Codex' ? '$' : '/'}slack-message-formatter`));
+    const skill = join(project, destination, 'slack-message-formatter');
+    assert.equal(readFileSync(join(skill, 'SKILL.md'), 'utf8'), readFileSync(join(repo, 'skills', 'slack-message-formatter', 'SKILL.md'), 'utf8'));
+    const run = spawnSync(process.execPath, [join(skill, 'src', 'run.mjs'), 'mrkdwn'], {
+      cwd: temp, input: '**Installed**', encoding: 'utf8',
+    });
+    assert.equal(run.status, 0, run.stderr);
+    assert.equal(run.stdout.trim(), '*Installed*');
   });
-  assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /Restart Codex/);
-  assert.match(result.stdout, /\$slack-message-formatter/);
-  const skill = join(project, '.agents', 'skills', 'slack-message-formatter');
-  assert.equal(readFileSync(join(skill, 'SKILL.md'), 'utf8'), readFileSync(join(repo, 'skills', 'slack-message-formatter', 'SKILL.md'), 'utf8'));
-  const run = spawnSync(process.execPath, [join(skill, 'src', 'run.mjs'), 'mrkdwn'], {
-    cwd: temp, input: '**Installed**', encoding: 'utf8',
-  });
-  assert.equal(run.status, 0, run.stderr);
-  assert.equal(run.stdout.trim(), '*Installed*');
-});
+}

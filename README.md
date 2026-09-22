@@ -223,12 +223,16 @@ node test-skill.mjs   # from repo root
 node --test test-distribution.mjs
 ```
 
-Comprehensive test suite with 232+ tests covering:
+The formatter suite runs 434 checks covering:
+
 - Both HTML and mrkdwn output for every feature
 - Emoji shortcode conversion (85+ verified individually)
 - Nested formatting, edge cases, unclosed markers
 - Real-world messages (deployment, incident, meeting notes, code review, sprint summary)
 - Special character escaping, Windows line endings
+
+The distribution suite checks package paths, conversion outside the repo, and
+project installation for Codex and Claude Code.
 
 ## Known Limitations
 
