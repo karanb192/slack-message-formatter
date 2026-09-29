@@ -129,6 +129,9 @@ echo '## Announcement' | node src/run.mjs preview
 # → Opens browser with Slack-themed preview + copy page
 ```
 
+The preview footer links to this repository. The copy page, HTML output,
+mrkdwn output, and webhook payload contain only your message.
+
 ## Features
 
 ### Copy-Paste Path (Rich HTML)

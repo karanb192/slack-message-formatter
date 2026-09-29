@@ -869,6 +869,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .mrkdwn-body pre{background:#1a1d21;border:1px solid #2c2d30;border-radius:4px;padding:12px;font-family:'SF Mono',Monaco,Menlo,monospace;font-size:13px;color:#d1d2d3;white-space:pre-wrap;word-wrap:break-word}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(100px);background:#007a5a;color:#fff;padding:10px 20px;border-radius:8px;font-size:14px;font-weight:600;transition:transform .3s ease;z-index:1000}
 .toast.show{transform:translateX(-50%) translateY(0)}
+.project-link{max-width:800px;margin:0 auto;padding:0 20px 20px;font-size:12px;color:#9a9b9e}
+.project-link a{color:#1d9bd1;text-decoration:none}.project-link a:hover{text-decoration:underline}
 </style>
 </head>
 <body>
@@ -888,6 +890,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 <div class="mrkdwn-body" id="mb"><pre id="mrkdwn-text">${escapedMrkdwn}</pre>
 <button class="btn btn-secondary" onclick="copyMrkdwn()" style="margin-top:8px">Copy mrkdwn</button></div></div></div>
 <div class="toast" id="toast"></div>
+<footer class="project-link"><a href="https://github.com/karanb192/slack-message-formatter">Slack Message Formatter source</a></footer>
 <script>
 function copyForSlack(){
 // Open the clean copy page (white background, same as test-paste.html)
