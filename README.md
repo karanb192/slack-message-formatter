@@ -132,6 +132,12 @@ echo '## Announcement' | node src/run.mjs preview
 The preview footer links to this repository. The copy page, HTML output,
 mrkdwn output, and webhook payload contain only your message.
 
+After confirmed useful output, the skill can offer one optional star
+invitation. Its record lives in `$XDG_CACHE_HOME/slack-message-formatter/`
+(default `~/.cache/slack-message-formatter/`), outside temporary previews.
+Starring through GitHub CLI requires an explicit yes. Clearing the cache
+resets the record.
+
 ## Features
 
 ### Copy-Paste Path (Rich HTML)
