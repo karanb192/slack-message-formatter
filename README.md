@@ -142,6 +142,7 @@ resets the record.
 
 ### Copy-Paste Path (Rich HTML)
 - Opens a clean HTML page in your browser
+- Copy and preview pages follow your system's light or dark appearance and update when it changes
 - `Cmd+A`, `Cmd+C`, then `Cmd+V` in Slack
 - Preserves: bold, italic, strikethrough, links, lists, nested lists, code blocks, blockquotes, headings, task lists, tables (as code blocks), horizontal rules
 
@@ -174,7 +175,7 @@ resets the record.
 
 | Command | What it does |
 |---------|-------------|
-| `preview` | Opens browser with copy page + dark preview |
+| `preview` | Opens browser with copy and preview pages that follow system appearance |
 | `send` | Sends via Slack webhook (mrkdwn) |
 | `html` | Outputs raw HTML to stdout |
 | `mrkdwn` | Outputs raw mrkdwn to stdout |

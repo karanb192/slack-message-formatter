@@ -798,22 +798,28 @@ function autoLinkJiraKeys(md, baseUrl) {
 // Preview page generator
 // =============================================================
 
+const PAGE_THEME = `
+:root{color-scheme:light dark;--page:#ffffff;--surface:#ffffff;--raised:#f0f0f0;--border:#dddddd;--text:#1d1c1d;--strong:#1d1c1d;--muted:#5e5d60;--link:#1264a3;--code-bg:#f4f4f4;--code-text:#c7254e}
+@media(prefers-color-scheme:dark){:root{--page:#1a1d21;--surface:#222529;--raised:#2c2d30;--border:#3c3d40;--text:#d1d2d3;--strong:#e8e8e8;--muted:#a8a9ac;--link:#5bb7e5;--code-bg:#1a1d21;--code-text:#f08c95}}
+`;
+
 function generateCopyPage(markdown) {
   const html = convertToHTML(markdown);
   return `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>Copy for Slack</title>
 <style>
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:15px;line-height:1.5;color:#1d1c1d;padding:20px;max-width:700px;margin:0 auto}
-table{border-collapse:collapse;border:1px solid #ccc;margin:8px 0}
-th,td{border:1px solid #ccc;padding:6px 12px}
-th{font-weight:700;background:#f8f9fa}
-pre{background:#f4f4f4;padding:10px;border-radius:4px;font-family:'SF Mono',Monaco,Menlo,monospace;font-size:13px;overflow-x:auto}
-code{background:#f0f0f0;padding:2px 5px;margin:0 2px;border-radius:3px;font-family:'SF Mono',Monaco,Menlo,monospace;font-size:13px;color:#c7254e}
+${PAGE_THEME}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:15px;line-height:1.5;background:var(--page);color:var(--text);padding:20px;max-width:700px;margin:0 auto}
+table{border-collapse:collapse;border:1px solid var(--border);margin:8px 0}
+th,td{border:1px solid var(--border);padding:6px 12px}
+th{font-weight:700;background:var(--raised)}
+pre{background:var(--code-bg);padding:10px;border-radius:4px;font-family:'SF Mono',Monaco,Menlo,monospace;font-size:13px;overflow-x:auto}
+code{background:var(--raised);padding:2px 5px;margin:0 2px;border-radius:3px;font-family:'SF Mono',Monaco,Menlo,monospace;font-size:13px;color:var(--code-text)}
 pre code{background:none;padding:0;margin:0;color:inherit}
-blockquote{border-left:4px solid #ddd;padding:4px 12px;margin:8px 0;color:#555}
-a{color:#1264a3;text-decoration:none}
+blockquote{border-left:4px solid var(--border);padding:4px 12px;margin:8px 0;color:var(--muted)}
+a{color:var(--link);text-decoration:none}
 ul,ol{padding-left:24px;margin:4px 0}li{margin:2px 0}
-hr{border:none;border-top:1px solid #ddd;margin:12px 0}
+hr{border:none;border-top:1px solid var(--border);margin:12px 0}
 </style></head>
 <body>
 <div id="content">${html}</div>
@@ -832,45 +838,46 @@ function generatePreviewPage(markdown, copyPagePath) {
 <meta charset="utf-8">
 <title>Slack Message Preview</title>
 <style>
+${PAGE_THEME}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#1a1d21;color:#d1d2d3;min-height:100vh}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--page);color:var(--text);min-height:100vh}
 .container{max-width:800px;margin:0 auto;padding:20px}
-.top-bar{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #2c2d30;margin-bottom:20px}
-.top-bar h1{font-size:16px;font-weight:700;color:#e8e8e8}
+.top-bar{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--raised);margin-bottom:20px}
+.top-bar h1{font-size:16px;font-weight:700;color:var(--strong)}
 .btn-group{display:flex;gap:8px}
 .btn{padding:8px 16px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
 .btn-primary{background:#007a5a;color:#fff}.btn-primary:hover{background:#148567}.btn-primary.copied{background:#2eb67d}
-.btn-secondary{background:#2c2d30;color:#d1d2d3;border:1px solid #3c3d40}.btn-secondary:hover{background:#3c3d40}
-.message-wrapper{background:#222529;border-radius:8px;border:1px solid #2c2d30;overflow:hidden}
-.channel-bar{padding:10px 16px;border-bottom:1px solid #2c2d30;font-size:13px;color:#9a9b9e}.channel-bar span{color:#e8e8e8;font-weight:700}
+.btn-secondary{background:var(--raised);color:var(--text);border:1px solid var(--border)}.btn-secondary:hover{background:var(--border)}
+.message-wrapper{background:var(--surface);border-radius:8px;border:1px solid var(--raised);overflow:hidden}
+.channel-bar{padding:10px 16px;border-bottom:1px solid var(--raised);font-size:13px;color:var(--muted)}.channel-bar span{color:var(--strong);font-weight:700}
 .message{display:flex;padding:16px;gap:12px}
 .avatar{width:36px;height:36px;border-radius:4px;background:#4a154b;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
 .message-body{flex:1;min-width:0}
 .message-header{display:flex;align-items:baseline;gap:8px;margin-bottom:4px}
-.username{font-weight:700;font-size:15px;color:#e8e8e8}
-.app-badge{background:#3c3d40;color:#9a9b9e;font-size:10px;padding:1px 4px;border-radius:3px;font-weight:600}
-.timestamp{font-size:12px;color:#616061}
-.mc{font-size:15px;line-height:1.46668;color:#d1d2d3;word-wrap:break-word}
-.mc b{color:#e8e8e8}.mc i{font-style:italic}.mc s{text-decoration:line-through;color:#9a9b9e}
-.mc a{color:#1d9bd1;text-decoration:none}.mc a:hover{text-decoration:underline}
-.mc code{background:#1a1d21;border:1px solid #2c2d30;border-radius:3px;padding:1px 4px;margin:0 2px;font-family:'SF Mono',Monaco,Menlo,monospace;font-size:12px;color:#e06c75}
-.mc pre{background:#1a1d21;border:1px solid #2c2d30;border-radius:4px;padding:12px;margin:8px 0;overflow-x:auto}
-.mc pre code{background:none;border:none;padding:0;margin:0;font-size:13px;color:#d1d2d3}
-.mc blockquote{border-left:4px solid #4a154b;padding:4px 12px;margin:4px 0;color:#9a9b9e}
+.username{font-weight:700;font-size:15px;color:var(--strong)}
+.app-badge{background:var(--border);color:var(--muted);font-size:10px;padding:1px 4px;border-radius:3px;font-weight:600}
+.timestamp{font-size:12px;color:var(--muted)}
+.mc{font-size:15px;line-height:1.46668;color:var(--text);word-wrap:break-word}
+.mc b{color:var(--strong)}.mc i{font-style:italic}.mc s{text-decoration:line-through;color:var(--muted)}
+.mc a{color:var(--link);text-decoration:none}.mc a:hover{text-decoration:underline}
+.mc code{background:var(--code-bg);border:1px solid var(--raised);border-radius:3px;padding:1px 4px;margin:0 2px;font-family:'SF Mono',Monaco,Menlo,monospace;font-size:12px;color:var(--code-text)}
+.mc pre{background:var(--code-bg);border:1px solid var(--raised);border-radius:4px;padding:12px;margin:8px 0;overflow-x:auto}
+.mc pre code{background:none;border:none;padding:0;margin:0;font-size:13px;color:var(--text)}
+.mc blockquote{border-left:4px solid var(--border);padding:4px 12px;margin:4px 0;color:var(--muted)}
 .mc ul,.mc ol{padding-left:24px;margin:4px 0}.mc li{margin:2px 0}
 .mc .mc table{border-collapse:collapse;margin:8px 0;font-size:14px}
-.mc th,.mc td{border:1px solid #3c3d40;padding:6px 12px}
-.mc th{background:#2c2d30;font-weight:700;color:#e8e8e8}
-.mc hr{border:none;border-top:1px solid #3c3d40;margin:12px 0}
-.mrkdwn-section{margin-top:20px;background:#222529;border-radius:8px;border:1px solid #2c2d30;overflow:hidden}
-.mrkdwn-header{padding:10px 16px;border-bottom:1px solid #2c2d30;font-size:13px;color:#9a9b9e;display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none}
-.mrkdwn-header:hover{background:#2c2d30}
+.mc th,.mc td{border:1px solid var(--border);padding:6px 12px}
+.mc th{background:var(--raised);font-weight:700;color:var(--strong)}
+.mc hr{border:none;border-top:1px solid var(--border);margin:12px 0}
+.mrkdwn-section{margin-top:20px;background:var(--surface);border-radius:8px;border:1px solid var(--raised);overflow:hidden}
+.mrkdwn-header{padding:10px 16px;border-bottom:1px solid var(--raised);font-size:13px;color:var(--muted);display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none}
+.mrkdwn-header:hover{background:var(--raised)}
 .mrkdwn-body{display:none;padding:16px}.mrkdwn-body.open{display:block}
-.mrkdwn-body pre{background:#1a1d21;border:1px solid #2c2d30;border-radius:4px;padding:12px;font-family:'SF Mono',Monaco,Menlo,monospace;font-size:13px;color:#d1d2d3;white-space:pre-wrap;word-wrap:break-word}
+.mrkdwn-body pre{background:var(--code-bg);border:1px solid var(--raised);border-radius:4px;padding:12px;font-family:'SF Mono',Monaco,Menlo,monospace;font-size:13px;color:var(--text);white-space:pre-wrap;word-wrap:break-word}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(100px);background:#007a5a;color:#fff;padding:10px 20px;border-radius:8px;font-size:14px;font-weight:600;transition:transform .3s ease;z-index:1000}
 .toast.show{transform:translateX(-50%) translateY(0)}
-.project-link{max-width:800px;margin:0 auto;padding:0 20px 20px;font-size:12px;color:#9a9b9e}
-.project-link a{color:#1d9bd1;text-decoration:none}.project-link a:hover{text-decoration:underline}
+.project-link{max-width:800px;margin:0 auto;padding:0 20px 20px;font-size:12px;color:var(--muted)}
+.project-link a{color:var(--link);text-decoration:none}.project-link a:hover{text-decoration:underline}
 </style>
 </head>
 <body>
@@ -893,8 +900,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 <footer class="project-link"><a href="https://github.com/karanb192/slack-message-formatter">Slack Message Formatter source</a></footer>
 <script>
 function copyForSlack(){
-// Open the clean copy page (white background, same as test-paste.html)
-// The copy page path is stored as a data attribute on the button
 const copyPage=document.getElementById('copy-btn').dataset.copyPage;
 window.open(copyPage,'_blank');
 }
@@ -981,10 +986,8 @@ switch (command) {
     const copyPath = join(PREVIEW_DIR, `copy-${ts}.html`);
     const previewPath = join(PREVIEW_DIR, `preview-${ts}.html`);
 
-    // Generate clean copy page (white bg, same as test-paste.html)
     writeFileSync(copyPath, generateCopyPage(markdown), "utf-8");
 
-    // Generate dark preview page (links to copy page)
     writeFileSync(previewPath, generatePreviewPage(markdown, copyPath), "utf-8");
 
     // Open the COPY page directly — user selects content, Cmd+C, paste in Slack.

@@ -70,6 +70,7 @@ This will:
 - Convert Markdown → Rich HTML (for copy-paste)
 - Convert Markdown → Slack mrkdwn (for API)
 - Write a copy page + Slack-themed preview page to `/tmp/slack-formatter/`
+- Follow the system's light or dark appearance on both pages, including live changes
 - Open the copy page in the user's browser
 - Print both file paths for future reference
 
