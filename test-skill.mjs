@@ -2442,7 +2442,7 @@ section("preview: inline code pill spacing (issue #14)");
   const previewHtml = previewFile ? readFileSync(join(previewDir, previewFile), "utf-8") : "";
 
   check("copy page code pill has horizontal margin",
-    copyHtml.includes("code{background:#f0f0f0;padding:2px 5px;margin:0 2px;"),
+    /^code\{[^}]*margin:0 2px/m.test(copyHtml),
     copyHtml.match(/^code\{.*$/m)?.[0] ?? "code{} rule not found", "preview");
 
   check("copy page pre code resets margin",
