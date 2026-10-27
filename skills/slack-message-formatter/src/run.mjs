@@ -232,6 +232,8 @@ function convertToHTML(md) {
   // browser and in Slack's paste handler (verified). Inline-ending blocks
   // (paragraphs, headings, task lines) need <br><br> for the same gap. No
   // trailing breaks after the last block — Slack pastes them as empty lines.
+  // An attached list still needs one <br> (no blank line before a block), or
+  // Slack's paste handler pulls the intro text into the first bullet.
   let result = "";
   for (let k = 0; k < blocks.length; k++) {
     const [type, html] = blocks[k];
@@ -240,7 +242,7 @@ function convertToHTML(md) {
       const next = blocks[k + 1][0];
       const attached = type === "text" && (next === "list" || next === "tasks" || next === "pre");
       if (attached) {
-        result += "\n";
+        result += next === "pre" ? "\n" : "<br>\n";
       } else {
         const endsBlock = /(?:<\/(?:ul|ol|pre|blockquote)>|<hr>)$/.test(html);
         result += endsBlock ? "<br>\n" : "<br><br>\n";

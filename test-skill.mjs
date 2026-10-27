@@ -640,23 +640,29 @@ testContains("Paragraphs separated by one blank line", "html",
   "First para.\n\nSecond para.",
   ["First para.<br><br>\nSecond para."]);
 
-testContains("Paragraph attaches to following list", "html",
+testContains("Paragraph attaches to following list with one break", "html",
   "Intro line:\n\n- a\n- b",
-  ["Intro line:\n<ul>"],
-  ["Intro line:<br>"]);
+  ["Intro line:<br>\n<ul>"],
+  ["Intro line:<br><br>"]);
 
-testContains("Heading attaches to following list", "html",
+testContains("Heading attaches to following list with one break", "html",
   "## Changes\n\n- a",
-  ["<b>Changes</b>\n<ul>"],
-  ["<b>Changes</b><br>"]);
+  ["<b>Changes</b><br>\n<ul>"],
+  ["<b>Changes</b><br><br>"]);
+
+testContains("Bold intro line stays out of the first bullet", "html",
+  "**Release notes**\n\n- [PR](https://example.com/1): first",
+  ["<b>Release notes</b><br>\n<ul>"]);
 
 testContains("Paragraph attaches to following code block", "html",
   "Run this:\n\n```\nls\n```",
-  ["Run this:\n<pre><code>ls</code></pre>"]);
+  ["Run this:\n<pre><code>ls</code></pre>"],
+  ["Run this:<br>"]);
 
-testContains("Paragraph attaches to following task list", "html",
+testContains("Paragraph attaches to following task list with one break", "html",
   "Status:\n\n- [x] done",
-  ["Status:\n&#x2705; done"]);
+  ["Status:<br>\n&#x2705; done"],
+  ["Status:<br><br>"]);
 
 testContains("List followed by paragraph gets a blank line", "html",
   "- a\n- b\n\n**Impact:** high",
@@ -1269,7 +1275,7 @@ test("Plain line between bullets splits list, items appear once", "html",
   `<ul>
 <li>a</li>
 </ul><br>
-x
+x<br>
 <ul>
 <li>b</li>
 </ul>`);
@@ -1531,7 +1537,7 @@ test("Paren marker with number != 1 does not interrupt either", "html",
 
 test("'1.' still interrupts a paragraph", "html",
   "Steps:\n1. First\n2. Second",
-  `Steps:
+  `Steps:<br>
 <ol>
 <li>First</li>
 <li>Second</li>
@@ -1539,7 +1545,7 @@ test("'1.' still interrupts a paragraph", "html",
 
 test("'1)' still interrupts a paragraph", "html",
   "Steps:\n1) First\n2) Second",
-  `Steps:
+  `Steps:<br>
 <ol>
 <li>First</li>
 <li>Second</li>
@@ -1547,7 +1553,7 @@ test("'1)' still interrupts a paragraph", "html",
 
 test("After a blank line any number still starts a list", "html",
   "Intro paragraph.\n\n2024. first\n2025. second",
-  `Intro paragraph.
+  `Intro paragraph.<br>
 <ol start="2024">
 <li>first</li>
 <li>second</li>
