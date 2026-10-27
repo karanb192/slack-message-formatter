@@ -7,7 +7,7 @@
  * Run: node test-skill.mjs
  */
 
-import { execSync, spawn } from "child_process";
+import { spawn, spawnSync } from "child_process";
 import { createServer } from "http";
 import { mkdtempSync, readdirSync, readFileSync, rmSync } from "fs";
 import { tmpdir } from "os";
@@ -23,21 +23,19 @@ const BOLD = "\x1b[1m";
 let pass = 0;
 let fail = 0;
 
-function run(cmd, input, env = {}) {
-  try {
-    // Use heredoc to avoid shell interpretation of backticks, <, >, etc.
-    const envPrefix = Object.entries(env)
-      .map(([k, v]) => `${k}='${v}'`)
-      .join(" ");
-    const shellCmd = `${envPrefix} node ${RUN} ${cmd} <<'TESTEOF'\n${input}\nTESTEOF`;
-    return execSync(shellCmd, {
-      encoding: "utf-8",
-      stdio: ["pipe", "pipe", "pipe"],
-      shell: "/bin/bash",
-    }).trim();
-  } catch (e) {
-    return e.stdout ? e.stdout.trim() : `ERROR: ${e.message}`;
+// No shell: input and env values reach run.mjs byte for byte.
+function run(cmd, input, env = {}, bin = process.execPath) {
+  const result = spawnSync(bin, [RUN, cmd], {
+    input,
+    encoding: "utf-8",
+    env: { ...process.env, ...env },
+  });
+  if (result.error) return `ERROR: ${result.error.message}`;
+  const out = (result.stdout ?? "").trim();
+  if (result.status !== 0 && !out) {
+    return `ERROR: ${(result.stderr ?? "").trim() || `exit ${result.status}`}`;
   }
+  return out;
 }
 
 function test(name, cmd, input, expected, env = {}) {
@@ -587,21 +585,12 @@ testContains("Stray backticks flanking a double span leak no placeholders", "htm
   "the ` key and ``git status`` then ` end",
   ["<code>git status</code>"], ["IC0", "IC1", "undefined"]);
 
-// Sentinel control bytes (\x00-\x02) can't ride through the shell heredoc
-// harness — drive stdin directly. Crafted \x00IC<n>\x00 bytes in the input
-// must not spoof a placeholder (duplicating a real span) — main strips them.
+// Crafted \x00IC<n>\x00 bytes in the input must not spoof a placeholder
+// (duplicating a real span) — main strips them.
 {
-  const nulOut = await new Promise((resolve) => {
-    const child = spawn("node", [RUN, "html"]);
-    let out = "";
-    child.stdout.on("data", (d) => (out += d));
-    child.on("close", () => resolve(out.trim()));
-    child.stdin.write("a \x00IC0\x00 b `real`");
-    child.stdin.end();
-  });
+  const out = run("html", "a \x00IC0\x00 b `real`");
   check("placeholder-sentinel bytes in input can't spoof a code span",
-    nulOut === "a IC0 b <code>real</code>",
-    JSON.stringify(nulOut), "html");
+    out === "a IC0 b <code>real</code>", JSON.stringify(out), "html");
 }
 
 section("HTML: List Item Continuation Lines");
@@ -2492,7 +2481,7 @@ const PORT = server.address().port;
 function runSend(input, env) {
   return new Promise((resolve) => {
     // Blank out ambient webhook vars so tests are hermetic
-    const child = spawn("node", [RUN, "send"], {
+    const child = spawn(process.execPath, [RUN, "send"], {
       env: { ...process.env, SLACK_WEBHOOK_URL: "", CCH_SLA_WEBHOOK: "", ...env },
     });
     let out = "", err = "";
@@ -2525,6 +2514,39 @@ check("fails with clear error when no webhook configured",
   r.code === 1 && r.err.includes("SLACK_WEBHOOK_URL"), JSON.stringify(r));
 
 server.close();
+
+// =============================================================
+// TEST HARNESS
+// =============================================================
+
+section("Test Harness: input and env pass through literally");
+
+testContains("A line reading TESTEOF does not cut the input short", "mrkdwn",
+  "before\nTESTEOF\nafter",
+  ["before\nTESTEOF\nafter"]);
+
+testContains("Shell syntax in input stays literal", "mrkdwn",
+  "cost $(echo 5) for $HOME",
+  ["cost $(echo 5) for $HOME"]);
+
+testContains("Env value with a single quote reaches the converter", "mrkdwn",
+  "Fix ENG-1 now",
+  ["<https://x.example/it's/browse/ENG-1|ENG-1>"],
+  ["ERROR"],
+  { JIRA_BASE_URL: "https://x.example/it's" });
+
+{
+  const out = run("mrkdwn", "x", {}, "/nonexistent/node");
+  check("A failed launch returns an error string instead of throwing",
+    out.startsWith("ERROR: ") && out.includes("ENOENT"), JSON.stringify(out), "harness");
+}
+
+{
+  const out = run("mrkdwn", "");
+  check("Nonzero exit with no stdout returns stderr as the error",
+    out === "ERROR: Error: No input. Pipe Markdown via stdin.\nUsage: echo '**bold**' | node run.mjs preview",
+    JSON.stringify(out), "harness");
+}
 
 // =============================================================
 // SUMMARY
