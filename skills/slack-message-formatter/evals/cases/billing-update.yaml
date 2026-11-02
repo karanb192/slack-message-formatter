@@ -1,0 +1,33 @@
+id: billing-update
+title: Preserve a billing condition when shortening a new thread
+input:
+  prompt: "Write a short new Slack thread for the support team using facts.txt. Save only draft.md and skip conversion, previews and sending."
+context:
+  git: {init: true}
+  files:
+    ".claude/settings.json": |
+      {"permissions":{"deny":["Edit(~/**)","Bash"]}}
+    "facts.txt": |
+      Monthly subscribers can cancel before renewal to avoid their next charge.
+      Cancellation does not refund the current billing period.
+      Annual subscribers keep their existing terms; this update only concerns monthly subscriptions.
+      The billing page explains the policy, but its URL has not been verified.
+      Support should explain these terms when a monthly subscriber asks to cancel.
+judges:
+  - id: selection
+    type: rule_based
+    success:
+      - tool_called:
+          name: Skill
+          args: {skill: "slack-message-formatter:slack-message-formatter"}
+  - id: files
+    type: script
+    script_path: evals/scripts/draft-only.sh
+  - id: clarity
+    type: agent_judge
+    engine: {name: claude_code, model: {provider: anthropic, name: claude-sonnet-5}}
+    pass_threshold: 1.0
+    criteria:
+      - "Clearly limits the update to monthly subscribers, preserves cancellation before renewal as the condition for avoiding the next charge, and makes clear there is no refund for the current period. Does not imply annual terms changed."
+      - "Gives support the requested action, invents no link or recipient, and does not block drafting to ask about optional tags or the unverified page URL."
+      - "Keeps the draft brief without dropping conditions; does not run a converter, open a preview, or send a message."

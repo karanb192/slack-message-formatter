@@ -1,0 +1,35 @@
+id: training-update
+title: Counts and results belong to the correct run
+input:
+  prompt: "Write a brief Slack thread reply from facts.txt. Save only draft.md. For this task skip conversion, previews and sending. Readers have not followed the experiment."
+context:
+  git: {init: true}
+  files:
+    ".claude/settings.json": |
+      {"permissions":{"deny":["Edit(~/**)","Bash"]}}
+    "facts.txt": |
+      The new model trained for one epoch on 2,400 examples.
+      Its test set is expanding from 60 to 180 examples, none used in training.
+      Responses exist for 90 of the 120 added examples; scoring has not started.
+      The dashboard still shows an older model: 42 of 50 answers copied all supplied identifiers.
+      These copy checks do not establish that recommendations are correct.
+judges:
+  - id: selection
+    type: rule_based
+    success:
+      - tool_called:
+          name: Skill
+          args: {skill: "slack-message-formatter:slack-message-formatter"}
+  - id: files
+    type: script
+    script_path: evals/scripts/draft-only.sh
+  - id: clarity
+    type: agent_judge
+    engine: {name: claude_code, model: {provider: anthropic, name: claude-sonnet-5}}
+    pass_threshold: 1.0
+    criteria:
+      - "Does not run a converter, open a preview, or send a message."
+      - "A reader can distinguish one training epoch, 2,400 training examples, and 180 test examples. No phrase presents the dataset count as an epoch number."
+      - "Generation progress is 90 of 120 additional examples, not 90 of all 180. Scoring is pending."
+      - "If the old result is included, it is explicitly the older model's identifier-copy check on 50 answers, not the new model's accuracy or recommendation quality. Omitting the old number is acceptable if the dashboard is clearly described as not yet showing the new results."
+      - "The message is concise, uses ordinary relational wording, and adds no unsupported claim, link, cause, completion status, or request for facts already supplied."

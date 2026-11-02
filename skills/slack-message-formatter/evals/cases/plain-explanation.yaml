@@ -1,0 +1,25 @@
+id: plain-explanation
+title: A general explanation is not a Slack draft
+input:
+  prompt: "What is the difference between a training example and an epoch? Answer briefly here. Do not write files."
+context:
+  git: {init: true}
+  files:
+    ".claude/settings.json": |
+      {"permissions":{"deny":["Edit(~/**)","Bash"]}}
+judges:
+  - id: selection
+    type: rule_based
+    failure:
+      - tool_called:
+          name: Skill
+          args: {skill: "slack-message-formatter:slack-message-formatter"}
+  - id: files
+    type: script
+    script_path: evals/scripts/no-writes.sh
+  - id: clarity
+    type: agent_judge
+    engine: {name: claude_code, model: {provider: anthropic, name: claude-sonnet-5}}
+    pass_threshold: 1.0
+    criteria:
+      - "Explains that an example is one training item and an epoch is one pass through the training set. Does not create files, run a converter, or frame the answer as a Slack draft."
