@@ -61,3 +61,27 @@ test('no-writes guard accepts a clean workspace and rejects writes and git failu
   rmSync(join(cwd, '.git'), { recursive: true });
   assert.notEqual(status(cwd, noWrites), 0);
 }));
+
+test('later commits cannot replace the fixture baseline', () => workspace((cwd, git) => {
+  rmSync(join(cwd, 'draft.md'));
+  writeFileSync(join(cwd, 'facts.txt'), 'Changed.\n');
+  git('add', '.');
+  git('-c', 'user.name=Test', '-c', 'user.email=test@example.invalid',
+    '-c', 'core.hooksPath=/dev/null', '-c', 'commit.gpgsign=false',
+    'commit', '-qm', 'skill-up-baseline');
+  assert.notEqual(status(cwd, noWrites), 0);
+  writeFileSync(join(cwd, 'draft.md'), 'Draft.\n');
+  assert.notEqual(status(cwd), 0);
+}));
+
+test('verbatim guard accepts exact text and rejects a rewrite', () => workspace((cwd, git) => {
+  writeFileSync(join(cwd, 'expected.txt'), 'Original wording.\n');
+  git('add', 'expected.txt');
+  git('-c', 'user.name=Test', '-c', 'user.email=test@example.invalid',
+    '-c', 'core.hooksPath=/dev/null', '-c', 'commit.gpgsign=false',
+    'commit', '--amend', '--no-edit', '-q');
+  writeFileSync(join(cwd, 'draft.md'), 'Original wording.\n');
+  assert.equal(status(cwd), 0);
+  writeFileSync(join(cwd, 'draft.md'), 'Changed wording.\n');
+  assert.notEqual(status(cwd), 0);
+}));

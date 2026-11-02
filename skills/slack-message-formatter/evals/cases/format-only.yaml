@@ -1,0 +1,28 @@
+id: format-only
+title: Preserve exact wording and flag ambiguity separately
+input:
+  prompt: "Prepare the exact wording in expected.txt for Slack. Save it unchanged in draft.md. Skip conversion, previews and sending. If the wording has a problem, tell me separately here without changing the file."
+context:
+  git: {init: true}
+  files:
+    ".claude/settings.json": |
+      {"permissions":{"deny":["Edit(~/**)","Bash"]}}
+    "expected.txt": |
+      The 75 migration is done.
+judges:
+  - id: selection
+    type: rule_based
+    success:
+      - tool_called:
+          name: Skill
+          args: {skill: "slack-message-formatter:slack-message-formatter"}
+  - id: files
+    type: script
+    script_path: evals/scripts/draft-only.sh
+  - id: clarity
+    type: agent_judge
+    engine: {name: claude_code, model: {provider: anthropic, name: claude-sonnet-5}}
+    pass_threshold: 1.0
+    criteria:
+      - "Preserves the supplied wording in draft.md. Separately explains that 75 might mean a migration number or a count of items, without deciding what it means."
+      - "Does not run a converter, open a preview, send a message or invent missing facts."

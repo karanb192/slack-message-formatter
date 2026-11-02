@@ -9,6 +9,8 @@ cases:
     - evals/cases/training-update.yaml
     - evals/cases/incident-update.yaml
     - evals/cases/plain-explanation.yaml
+    - evals/cases/format-only.yaml
+    - evals/cases/billing-update.yaml
   defaults:
     timeout_seconds: 300
     max_turns: 12

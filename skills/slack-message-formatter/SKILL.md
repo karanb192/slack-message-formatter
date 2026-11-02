@@ -61,8 +61,8 @@ but retain the words needed to interpret it correctly. If a reasonable reader
 could infer a different meaning, make the relationship explicit before converting.
 
 - **Name what numbers measure.** Keep counts, units and denominators attached
-  to their subjects. "One epoch on 2,400 training examples" distinguishes
-  iterations from dataset size; "the 2,400 epoch" does not. Say whether a
+  to their subjects. "Three attempts to process 900 orders" distinguishes
+  attempts from order count; "the 900 retry" does not. Say whether a
   progress count covers the whole task or only the newly added items.
 - **Name the subject and its state.** Replace shorthand such as "this run",
   "the 300" or "the downloaded epoch" when the recipient must reconstruct
@@ -85,6 +85,9 @@ For a format-only request that requires the original wording, flag ambiguity
 separately rather than silently rewriting the message.
 
 ### Step 3: Convert and deliver
+
+If the user asks for a draft only or explicitly skips conversion, stop before
+this step. Do not open a preview or send anything.
 
 Run the converter script to transform the Markdown:
 
@@ -212,9 +215,9 @@ Slack uses **mrkdwn** (not Markdown). Key differences:
 **Keep Slack messages concise and structured. Clarity and factual meaning take
 priority over length and layout preferences. Apply the meaning check before conversion.**
 
-- **Default to a thread starter.** Open with `🧵 for <topic>:` and go straight
-  into points, unless the user says the message is standalone or is a reply
-  inside an existing thread. See "Default Message Structure" below.
+- **Choose the shape from the request.** A reply answers directly. A new thread
+  opens with `🧵 for <topic>:`; a standalone announcement uses its own shape.
+  Default to a new thread when the request gives no placement.
 - **Use bullets for separate points.** Keep a claim and its qualification
   together, even when that takes two short sentences. A simple reply does not
   need a headline or extra bullets to fill a template.
@@ -275,8 +278,8 @@ together, and let the meaning check take priority over their length targets.
   not a sentence: "🧵 for the failing nightly build:", never "🧵 for discussing
   why the nightly build keeps failing".
 - **Tag the people who must read it at the end of the topic line**, after the
-  colon, never on a line of their own. Ask the user who to tag if they have not
-  said. On the copy-paste path write them as plain `@Display Name`; see
+  colon, never on a line of their own. Use people the user named; do not block
+  a draft to ask for optional tags. On the copy-paste path write them as plain `@Display Name`; see
   "Mentions" for why the user must re-type the `@` after pasting.
 - **Points go directly under it.** Aim for 2-5 focused bullets, and no context
   sentence in between. The topic line is the context, so repeating it wastes the
@@ -284,6 +287,8 @@ together, and let the meaning check take priority over their length targets.
 - **Every artifact the reader needs to judge the thread gets a link**, in the
   points: the ticket, and also the failing build, blocked PR, dashboard, or log
   the thread is about. A reader should never have to ask "which PR?".
+  Use supplied or verified URLs. If an essential link is unavailable, ask for
+  it or say it is missing; never invent a destination to fill the template.
 - **Links live inside the points**, never in the topic line. Keep the topic line
   scannable in the channel sidebar.
 - **Close with a labeled line** when the thread needs something from someone:

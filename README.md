@@ -257,8 +257,8 @@ skill-up run evals/eval.yaml --output-dir /tmp/slack-formatter-evals
 ```
 
 These use model calls and test the installed plugin, not an uninstalled working
-copy. They cover training updates, incident updates, and a nearby request that
-should not load the skill. Draft-only fixtures skip previews and sending; the
+copy. They cover training, incident and billing updates, preserving exact wording,
+and a nearby request that should not load the skill. Draft-only fixtures skip previews and sending; the
 Node tests cover conversion. Rerun after installing a changed plugin before
 claiming its behavior passed. A passing sample cannot guarantee clarity in
 every message.
