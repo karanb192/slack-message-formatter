@@ -29,9 +29,9 @@ Format messages for Slack with pixel-perfect accuracy. Converts Markdown to Slac
 - User wants to send a message via Slack webhook
 - User has Markdown content they want to share in Slack
 
-Invoke the skill before drafting any message text. A one-line reply still goes
-through the converter: the structure rules and the paste-safe HTML are the point,
-and both are lost when the message is written by hand in chat instead.
+Invoke the skill before drafting any message text. By default, even a one-line
+reply goes through the converter for paste-safe output. An explicit draft-only
+request skips conversion and delivery, as described in Step 3.
 
 ## Workflow
 
@@ -82,12 +82,14 @@ that reading with the supplied facts. Revise any mismatch or plausible second
 reading. If an essential fact is missing, ask a focused question or explicitly
 state what is unknown; do not invent it. A clear two-line reply stays two lines.
 For a format-only request that requires the original wording, flag ambiguity
-separately rather than silently rewriting the message.
+separately rather than silently rewriting the message. Keep that wording free
+of added titles, wrappers or template blocks, regardless of the default shape.
 
 ### Step 3: Convert and deliver
 
-If the user asks for a draft only or explicitly skips conversion, stop before
-this step. Do not open a preview or send anything.
+If the user asks for a draft only or explicitly skips conversion, return the
+draft and any separate wording concern. Do not run the converter, open a preview,
+send anything, or use the copy-page report in Step 4.
 
 Run the converter script to transform the Markdown:
 
@@ -112,7 +114,8 @@ don't survive Slack's paste handler. The user copies manually from the browser.
 
 ### Step 4: Report to user
 
-Tell the user:
+Report only actions that succeeded. After opening a copy page, use its actual
+path in a message like:
 ```
 ✅ Copy page opened in your browser.
    Select all (Cmd+A), copy (Cmd+C), then paste in Slack (Cmd+V).
@@ -289,6 +292,8 @@ together, and let the meaning check take priority over their length targets.
   the thread is about. A reader should never have to ask "which PR?".
   Use supplied or verified URLs. If an essential link is unavailable, ask for
   it or say it is missing; never invent a destination to fill the template.
+  Omit an unverified supporting link when the supplied facts already make the
+  message understandable and actionable.
 - **Links live inside the points**, never in the topic line. Keep the topic line
   scannable in the channel sidebar.
 - **Close with a labeled line** when the thread needs something from someone:
@@ -334,7 +339,7 @@ when pasted into Slack's compose box. Slack renders them as literal text.
 
 ## Important Notes
 
-- **Always generate Markdown first**, then convert. Never generate mrkdwn or HTML directly, because the converter is deterministic and correct while LLM output of these formats is not.
+- **Generate Markdown first**, then convert unless the user requested a draft only. Never generate mrkdwn or HTML directly; use the converter for those formats.
 - **Slack mention tokens only resolve on the API/webhook path.** See the "Mentions" section above for the per-path rules.
 - **Tables work via the HTML copy-paste path** but not via mrkdwn (Slack has no table syntax). Tables are converted to code blocks in the mrkdwn output.
 - **Preview files are timestamped** so users can revisit them from conversation history.
