@@ -54,7 +54,37 @@ Always generate the message content in **standard Markdown**. This is your nativ
 - Nested lists, blockquotes, code blocks with language hints
 - Slack mentions: **only work via the API/webhook path.** See "Mentions" below.
 
-### Step 2: Convert and deliver
+### Step 2: Check meaning before shortening
+
+Read the draft as a recipient who has not followed the work. Keep it brief,
+but retain the words needed to interpret it correctly. If a reasonable reader
+could infer a different meaning, make the relationship explicit before converting.
+
+- **Name what numbers measure.** Keep counts, units and denominators attached
+  to their subjects. "One epoch on 2,400 training examples" distinguishes
+  iterations from dataset size; "the 2,400 epoch" does not. Say whether a
+  progress count covers the whole task or only the newly added items.
+- **Name the subject and its state.** Replace shorthand such as "this run",
+  "the 300" or "the downloaded epoch" when the recipient must reconstruct
+  what it refers to. Distinguish planned, running, completed and evaluated.
+  Keep old results attached to the old version when discussing new work.
+- **Keep the scope of evidence in the claim.** Say what passed and what was
+  checked; copying supplied values is not overall answer accuracy. Distinguish
+  remaining failures from new failures. Preserve conditions and uncertainty
+  that change the conclusion; do not turn an association into a cause.
+- **Make the next action understandable.** When relevant and known, state who
+  does what and what it depends on. A link supplies evidence or detail; it
+  cannot substitute for the meaning of the message itself.
+
+Do not add these as mandatory sections to every message. Test the draft by
+paraphrasing its meaning without the surrounding conversation, then compare
+that reading with the supplied facts. Revise any mismatch or plausible second
+reading. If an essential fact is missing, ask a focused question or explicitly
+state what is unknown; do not invent it. A clear two-line reply stays two lines.
+For a format-only request that requires the original wording, flag ambiguity
+separately rather than silently rewriting the message.
+
+### Step 3: Convert and deliver
 
 Run the converter script to transform the Markdown:
 
@@ -77,7 +107,7 @@ This will:
 Note: the script does NOT touch the clipboard, because programmatic clipboard writes
 don't survive Slack's paste handler. The user copies manually from the browser.
 
-### Step 3: Report to user
+### Step 4: Report to user
 
 Tell the user:
 ```
@@ -179,21 +209,20 @@ Slack uses **mrkdwn** (not Markdown). Key differences:
 
 ## Content Guidelines
 
-**These are hard rules, not suggestions. Slack messages produced by this skill
-must be super concise and structured, never paragraphs of prose.**
+**Keep Slack messages concise and structured. Clarity and factual meaning take
+priority over length and layout preferences. Apply the meaning check before conversion.**
 
 - **Default to a thread starter.** Open with `🧵 for <topic>:` and go straight
   into points, unless the user says the message is standalone or is a reply
   inside an existing thread. See "Default Message Structure" below.
-- **Bullets over paragraphs, always.** If a message has more than one fact,
-  those facts go in bullets. A prose paragraph is only acceptable as the single
-  one-line context sentence under the headline. If you catch yourself writing
-  a second sentence in a row, convert to bullets.
-- **Hard length caps.** Headline: one line. Context: one line. Bullets: 2-5,
-  each a single line (no wrapping walls of text inside a bullet). Closing
-  `**Impact:**` / `**Ask:**` / `**Next:**` line: one line. If the content
-  doesn't fit, cut detail instead of adding paragraphs. Link out for depth instead
-  of inlining it.
+- **Use bullets for separate points.** Keep a claim and its qualification
+  together, even when that takes two short sentences. A simple reply does not
+  need a headline or extra bullets to fill a template.
+- **Length targets.** Aim for a short headline, optional context, and 2-5
+  focused bullets. Let lines wrap naturally. Cut repetition and incidental
+  detail before removing subjects, units, conditions or qualifications needed
+  to understand the claim. Split a crowded bullet or add a short sentence when
+  necessary; link out for supporting detail.
 - **Cut ruthlessly.** No preamble ("I wanted to share…", "Quick update on…"),
   no filler ("as you may know", "just", "basically"), no restating the
   headline in the context line, no sign-offs. Lead with the point.
@@ -215,15 +244,17 @@ must be super concise and structured, never paragraphs of prose.**
 - **Use blank lines between blocks.** Headline, context, bullet group, and
   closing line are each their own block with a blank line between, because Slack
   collapses adjacent lines together without spacing.
-- **Only go longer if the user explicitly asks** for a detailed / verbose
-  version. Even then, keep the structure: more bullets and sections, not prose.
+- **Keep extra detail optional.** Add only what the reader needs to understand
+  the result or act. Longer explanations need a user request; a few words that
+  prevent ambiguity do not.
 
 ## Default Message Structure
 
 Most Slack messages open a thread, so the thread starter below is the default
 shape. Use the standalone announcement shape only when the user says the message
-is a standalone post, or when they are replying inside a thread that already
-exists. Do not emit free-form paragraphs unless the user explicitly asks for prose.
+is a standalone post. For a reply, answer directly and use bullets only for
+separate points. These templates are defaults; keep a claim and its qualification
+together, and let the meaning check take priority over their length targets.
 
 ### Thread starter (default)
 
@@ -247,7 +278,7 @@ exists. Do not emit free-form paragraphs unless the user explicitly asks for pro
   colon, never on a line of their own. Ask the user who to tag if they have not
   said. On the copy-paste path write them as plain `@Display Name`; see
   "Mentions" for why the user must re-type the `@` after pasting.
-- **Points go directly under it.** 2-5 bullets, one line each, and no context
+- **Points go directly under it.** Aim for 2-5 focused bullets, and no context
   sentence in between. The topic line is the context, so repeating it wastes the
   reader's first line.
 - **Every artifact the reader needs to judge the thread gets a link**, in the
@@ -275,11 +306,11 @@ One line of context (with a link if relevant).
 
 - **Headline first**, bold, one line, optionally a status emoji (⚠️ 🚨 ✅ 🎉).
 - **One line of context**: what happened or why it matters, with a link.
-- **Bullets for everything else**, 2-5 short scannable bullets, never paragraphs.
+- **Use focused bullets for separate details.** A short second sentence may
+  qualify a claim in the same bullet.
 - **End with a labeled line** (`**Impact:**`, `**Ask:**`, or `**Next:**`) so
   readers know what to do without reading everything above.
-- Skip blocks that don't apply (a two-line FYI needs no bullets or Impact line),
-  but never replace a block with prose.
+- Skip blocks that don't apply (a two-line FYI needs no bullets or Impact line).
 
 ## Mentions
 

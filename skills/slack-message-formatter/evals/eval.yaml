@@ -1,0 +1,17 @@
+schema_version: v1alpha1
+environment:
+  type: none
+skills: []
+engine:
+  name: claude_code
+cases:
+  files:
+    - evals/cases/training-update.yaml
+    - evals/cases/incident-update.yaml
+    - evals/cases/plain-explanation.yaml
+  defaults:
+    timeout_seconds: 300
+    max_turns: 12
+  parallelism: 2
+report:
+  formats: [json, html]

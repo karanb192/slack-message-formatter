@@ -1,0 +1,33 @@
+id: incident-update
+title: A status update distinguishes fixes from new failures
+input:
+  prompt: "Make a short Slack reply from facts.txt for the team. Save only draft.md; skip conversion, previews and sending for this task."
+context:
+  git: {init: true}
+  files:
+    ".claude/settings.json": |
+      {"permissions":{"deny":["Edit(~/**)","Bash"]}}
+    "facts.txt": |
+      A patch was tested in staging on the same 80 jobs before and after.
+      Before: 20 jobs failed. After: those 20 pass, but 8 previously passing jobs now fail.
+      Production rollout is paused. The cause of the new failures is unknown.
+      Dana will inspect the 8 failures before deciding whether to roll out.
+judges:
+  - id: selection
+    type: rule_based
+    success:
+      - tool_called:
+          name: Skill
+          args: {skill: "slack-message-formatter:slack-message-formatter"}
+  - id: files
+    type: script
+    script_path: evals/scripts/draft-only.sh
+  - id: clarity
+    type: agent_judge
+    engine: {name: claude_code, model: {provider: anthropic, name: claude-sonnet-5}}
+    pass_threshold: 1.0
+    criteria:
+      - "The draft distinguishes fixing the 20 original failures from introducing 8 new failures, rather than saying 8 still fail or implying an unqualified success."
+      - "It identifies staging as the test environment and production rollout as paused, not completed."
+      - "The next action names Dana and inspecting the 8 new failures before a rollout decision. No cause is invented."
+      - "A reader can understand the update without reading facts.txt; the reply remains brief and does not bury the paused rollout under incidental detail."

@@ -230,10 +230,10 @@ Through extensive testing, we discovered:
 
 ```bash
 node test-skill.mjs   # from repo root
-node --test test-distribution.mjs
+node --test test-distribution.mjs test-invitation.mjs test-eval-guards.mjs
 ```
 
-The formatter suite runs 434 checks covering:
+The formatter suite runs 440 checks covering:
 
 - Both HTML and mrkdwn output for every feature
 - Emoji shortcode conversion (85+ verified individually)
@@ -243,6 +243,25 @@ The formatter suite runs 434 checks covering:
 
 The distribution suite checks package paths, conversion outside the repo, and
 project installation for Codex and Claude Code.
+
+The skill asks the agent to check meaning before shortening a draft: what numbers count,
+which result belongs to which version, and whether work is planned or finished.
+The converter itself only changes formatting; it does not verify claims.
+
+Behavioral cases live in `skills/slack-message-formatter/evals/`. With skill-up
+0.14 or newer and the Claude Code plugin installed, run:
+
+```bash
+cd skills/slack-message-formatter
+skill-up run evals/eval.yaml --output-dir /tmp/slack-formatter-evals
+```
+
+These use model calls and test the installed plugin, not an uninstalled working
+copy. They cover training updates, incident updates, and a nearby request that
+should not load the skill. Draft-only fixtures skip previews and sending; the
+Node tests cover conversion. Rerun after installing a changed plugin before
+claiming its behavior passed. A passing sample cannot guarantee clarity in
+every message.
 
 ## Known Limitations
 
