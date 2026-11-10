@@ -510,19 +510,22 @@ function inlineToHTML(text) {
 
   // Bold + Italic — non-space content edges so space-flanked delimiters
   // (e.g. the exponent operator in "2 ** 8") stay literal, per CommonMark
-  text = text.replace(/\*\*\*([^\s*](?:.*?[^\s*])?)\*\*\*/gs, "<b><i>$1</i></b>");
+  // The one-character alternative comes first in every emphasis pattern: with
+  // an optional lazy tail instead, `**a** x **b**` matched from the first
+  // opener to the last closer.
+  text = text.replace(/\*\*\*([^\s*]|[^\s*].*?[^\s*])\*\*\*/gs, "<b><i>$1</i></b>");
 
   // Bold
-  text = text.replace(/\*\*([^\s*](?:.*?[^\s*])?)\*\*/gs, "<b>$1</b>");
-  text = text.replace(/__([^\s_](?:.*?[^\s_])?)__/gs, "<b>$1</b>");
+  text = text.replace(/\*\*([^\s*]|[^\s*].*?[^\s*])\*\*/gs, "<b>$1</b>");
+  text = text.replace(/__([^\s_]|[^\s_].*?[^\s_])__/gs, "<b>$1</b>");
 
   // Strikethrough
-  text = text.replace(/~~([^\s~](?:.*?[^\s~])?)~~/gs, "<s>$1</s>");
+  text = text.replace(/~~([^\s~]|[^\s~].*?[^\s~])~~/gs, "<s>$1</s>");
 
   // Italic (*text*)
-  text = text.replace(/(?<!\*)\*([^\s*](?:.*?[^\s*])?)\*(?!\*)/gs, "<i>$1</i>");
+  text = text.replace(/(?<!\*)\*([^\s*]|[^\s*][^*]*?[^\s*])\*(?!\*)/gs, "<i>$1</i>");
   // Italic (_text_) — require word boundary so snake_case_names aren't mangled
-  text = text.replace(/(?<![a-zA-Z0-9])_([^\s_](?:.*?[^\s_])?)_(?![a-zA-Z0-9])/gs, "<i>$1</i>");
+  text = text.replace(/(?<![a-zA-Z0-9])_([^\s_]|[^\s_].*?[^\s_])_(?![a-zA-Z0-9])/gs, "<i>$1</i>");
 
   // Restore hrefs now that the emphasis passes are done — before the \x02
   // restore so protected underscores from unknown shortcodes in a URL still
@@ -662,17 +665,17 @@ function convertToMrkdwn(md) {
 
   // Bold + Italic — non-space content edges so space-flanked delimiters
   // (e.g. the exponent operator in "2 ** 8") stay literal, per CommonMark
-  result = result.replace(/\*\*\*([^\s*](?:.*?[^\s*])?)\*\*\*/gs, "_\x01$1\x01_");
+  result = result.replace(/\*\*\*([^\s*]|[^\s*].*?[^\s*])\*\*\*/gs, "_\x01$1\x01_");
 
   // Bold — use placeholder \x01 instead of * to avoid italic regex matching it
-  result = result.replace(/\*\*([^\s*](?:.*?[^\s*])?)\*\*/gs, "\x01$1\x01");
-  result = result.replace(/__([^\s_](?:.*?[^\s_])?)__/gs, "\x01$1\x01");
+  result = result.replace(/\*\*([^\s*]|[^\s*].*?[^\s*])\*\*/gs, "\x01$1\x01");
+  result = result.replace(/__([^\s_]|[^\s_].*?[^\s_])__/gs, "\x01$1\x01");
 
   // Strikethrough
-  result = result.replace(/~~([^\s~](?:.*?[^\s~])?)~~/gs, "~$1~");
+  result = result.replace(/~~([^\s~]|[^\s~].*?[^\s~])~~/gs, "~$1~");
 
   // Italic (*text* → _text_)
-  result = result.replace(/(?<!\x01)\*([^\s*](?:.*?[^\s*])?)\*(?!\x01)/gs, "_$1_");
+  result = result.replace(/(?<!\x01)\*([^\s*]|[^\s*][^*]*?[^\s*])\*(?!\x01)/gs, "_$1_");
 
   // Now replace bold placeholders with actual *
   result = result.replace(/\x01/g, "*");
