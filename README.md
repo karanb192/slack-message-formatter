@@ -266,7 +266,7 @@ every message.
 ## Known Limitations
 
 - **Bare URLs** (`https://example.com` without link syntax) are not auto-linked. Use `[text](url)` syntax. Slack auto-links bare URLs when sent via API anyway.
-- **Relative links** (`[Docs](/path)`) are ignored. Only `http://`, `https://`, and `mailto:` links are converted.
+- **Only web and mail links are converted.** A target that does not start with `http://`, `https://` or `mailto:` (a relative path, `javascript:`, `data:`, or a Slack token such as `!channel`) stays as literal Markdown text on every output path, so text copied from a ticket or log cannot plant a script link or a channel mention.
 - **Deeply nested parenthesized URLs** like `(a_(b_(c)))` may not parse correctly. Single-level parens (e.g. Wikipedia URLs) work fine.
 - **Tables in copy-paste** render as code blocks. Slack's WYSIWYG editor does not reliably accept HTML `<table>` tags when pasted alongside other rich content.
 - **`snake_case` text** is safe, underscores inside words are not misinterpreted as italic.

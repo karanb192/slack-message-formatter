@@ -2549,6 +2549,74 @@ testContains("Env value with a single quote reaches the converter", "mrkdwn",
 }
 
 // =============================================================
+// LINK TARGETS
+// =============================================================
+
+// Message text often comes from tickets, logs and web pages, so a link
+// target is untrusted input on every path.
+for (const cmd of ["html", "mrkdwn"]) {
+  testContains("javascript: target stays literal text", cmd,
+    "[click](javascript:alert(1))",
+    ["[click](javascript:alert(1))"], ["<a ", "<javascript"]);
+
+  testContains("data: image target stays literal text", cmd,
+    "![img](data:text/html,x)",
+    ["![img](data:text/html,x)"], ["<a ", "<data:"]);
+
+  testContains("Relative target stays literal text", cmd,
+    "[Docs](/path)",
+    ["[Docs](/path)"], ["<a ", "</path"]);
+
+  testContains("Badge with an unsafe outer target keeps only the inner link", cmd,
+    "[![b](https://img.example/b.png)](javascript:1)",
+    ["](javascript:1)"], ['href="javascript', "<javascript"]);
+}
+
+test("html: a quote in a target cannot end the href attribute", "html",
+  '[x](https://a.example/"onmouseover="alert(1))',
+  '<a href="https://a.example/&quot;onmouseover=&quot;alert(1)">x</a>');
+
+test("html: a quote in an autolink cannot end the href attribute", "html",
+  '<https://a.example/"x=1|label>',
+  '<a href="https://a.example/&quot;x=1">label</a>');
+
+test("html: mailto and upper-case schemes still link", "html",
+  "[m](mailto:a@b.example) [u](HTTPS://a.example)",
+  '<a href="mailto:a@b.example">m</a> <a href="HTTPS://a.example">u</a>');
+
+test("mrkdwn: a link target cannot become a Slack control sequence", "mrkdwn",
+  "[see details](!channel) and [who](@U012AB3CD)",
+  "[see details](!channel) and [who](@U012AB3CD)");
+
+test("mrkdwn: web link with underscores still converts after the target check", "mrkdwn",
+  "[src](https://a.example/__init__.py)",
+  "<https://a.example/__init__.py|src>");
+
+{
+  const previewDir = mkdtempSync(join(tmpdir(), "smf-test-"));
+  run("preview", "[x](https://a.example)", {
+    SLACK_FORMATTER_PREVIEW_DIR: previewDir,
+    SLACK_FORMATTER_NO_OPEN: "1",
+  });
+  const files = readdirSync(previewDir);
+  const page = (prefix) => readFileSync(join(previewDir, files.find((f) => f.startsWith(prefix))), "utf-8");
+  const copyHtml = page("copy-");
+  const previewHtml = page("preview-");
+  rmSync(previewDir, { recursive: true, force: true });
+
+  check("Copy page policy allows no script at all",
+    copyHtml.includes(`content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'"`)
+      && !copyHtml.includes("<script"),
+    copyHtml.match(/<meta http-equiv[^>]*>/)?.[0] ?? "no policy tag", "preview");
+
+  const nonce = previewHtml.match(/script-src 'nonce-([^']+)'/)?.[1];
+  check("Preview page runs only its own nonce-tagged script",
+    Boolean(nonce) && previewHtml.includes(`<script nonce="${nonce}">`)
+      && !/\son[a-z]+=/.test(previewHtml),
+    previewHtml.match(/<meta http-equiv[^>]*>/)?.[0] ?? "no policy tag", "preview");
+}
+
+// =============================================================
 // SUMMARY
 // =============================================================
 

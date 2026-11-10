@@ -17,6 +17,7 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, statSy
 import { join } from "path";
 import { execFile } from "child_process";
 import { platform, tmpdir } from "os";
+import { randomBytes } from "crypto";
 
 // =============================================================
 // Read stdin
@@ -414,6 +415,15 @@ const EMOJI_MAP = {
   ":scissors:":"✂️",":wastebasket:":"🗑️",":file_folder:":"📁",":open_file_folder:":"📂",
 };
 
+// Message text often comes from tickets, logs and web pages the user did not
+// write. Only web and mail targets may become a link: `javascript:` and `data:`
+// would run script on the copy page, and on the mrkdwn path a target such as
+// `!channel` would turn into a Slack control sequence.
+const isWebTarget = (u) => /^(?:https?:\/\/|mailto:)/i.test(u);
+
+// A quote in the target must not end the href attribute.
+const hrefAttr = (u) => u.replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+
 function inlineToHTML(text) {
   // Strip HTML comments before escaping
   text = text.replace(/<!--[\s\S]*?-->/g, "");
@@ -463,7 +473,7 @@ function inlineToHTML(text) {
   // Matches the escaped form: the < > became &lt;/&gt; above.
   const autolinks = [];
   text = text.replace(/&lt;((?:https?|mailto):[^\s]+?)(?:\|([^\n]+?))?&gt;/g, (_, url, label) => {
-    autolinks.push(`<a href="${url}">${label || url}</a>`);
+    autolinks.push(`<a href="${hrefAttr(url)}">${label || url}</a>`);
     return `\x00AL${autolinks.length - 1}\x00`;
   });
 
@@ -490,7 +500,7 @@ function inlineToHTML(text) {
   // *text* stays in place so [**bold**](url) still gets emphasis.
   const hrefs = [];
   const saveHref = (u) => {
-    hrefs.push(u);
+    hrefs.push(hrefAttr(u));
     return `\x00LH${hrefs.length - 1}\x00`;
   };
   // Linked image [![alt](img)](target) — the badge pattern — first, in one
@@ -502,11 +512,11 @@ function inlineToHTML(text) {
   // nothing — fall back to the URL as the visible text. The href placeholder
   // doubles as the text so the emphasis passes can't rewrite it either.
   text = text.replace(/\[!\[([^\]]*)\]\((?:[^()\s]|\([^()\s]*\))+(?:\s+"[^"]*")?\)\]\(((?:[^()\s]|\([^()\s]*\))+)(?:\s+"[^"]*")?\)/g,
-    (_, t, u) => { const p = saveHref(u); return `<a href="${p}">${t.trim() ? t : p}</a>`; });
+    (m, t, u) => { if (!isWebTarget(u)) return m; const p = saveHref(u); return `<a href="${p}">${t.trim() ? t : p}</a>`; });
   text = text.replace(/!\[([^\]]*)\]\(((?:[^()\s]|\([^()\s]*\))+)(?:\s+"[^"]*")?\)/g,
-    (_, t, u) => { const p = saveHref(u); return `<a href="${p}">${t.trim() ? t : p}</a>`; });
+    (m, t, u) => { if (!isWebTarget(u)) return m; const p = saveHref(u); return `<a href="${p}">${t.trim() ? t : p}</a>`; });
   text = text.replace(/\[([^\]]+)\]\(((?:[^()\s]|\([^()\s]*\))+)(?:\s+"[^"]*")?\)/g,
-    (_, t, u) => `<a href="${saveHref(u)}">${t}</a>`);
+    (m, t, u) => isWebTarget(u) ? `<a href="${saveHref(u)}">${t}</a>` : m);
 
   // Bold + Italic — non-space content edges so space-flanked delimiters
   // (e.g. the exponent operator in "2 ** 8") stay literal, per CommonMark
@@ -654,6 +664,10 @@ function convertToMrkdwn(md) {
     }
   );
 
+  const shieldedTarget = (u) => u.replace(/\x00LU(\d+)\x00/g, (m, i) => linkUrls[+i] ?? m);
+  const slackLink = (m, t, u) =>
+    !isWebTarget(shieldedTarget(u)) ? m : t.trim() ? `<${u}|${t}>` : `<${u}>`;
+
   // Order matters here. We use placeholders to avoid conflicts.
   // 1. Bold+italic (***) first
   // 2. Bold (**) — use placeholder \x01 for the single * that Slack uses
@@ -684,14 +698,14 @@ function convertToMrkdwn(md) {
   // Empty alt (![](url)) would emit <url|> — an empty label Slack renders as
   // nothing — so fall back to the bare <url> autolink form.
   result = result.replace(/\[!\[([^\]]*)\]\((?:[^()\s]|\([^()\s]*\))+(?:\s+"[^"]*")?\)\]\(((?:[^()\s]|\([^()\s]*\))+)(?:\s+"[^"]*")?\)/g,
-    (_, t, u) => t.trim() ? `<${u}|${t}>` : `<${u}>`);
+    slackLink);
 
   // Images → links (URL allows one level of balanced parens, e.g. Wikipedia URLs)
   result = result.replace(/!\[([^\]]*)\]\(((?:[^()\s]|\([^()\s]*\))+)(?:\s+"[^"]*")?\)/g,
-    (_, t, u) => t.trim() ? `<${u}|${t}>` : `<${u}>`);
+    slackLink);
 
   // Links (URL allows one level of balanced parens, e.g. Wikipedia URLs)
-  result = result.replace(/\[([^\]]+)\]\(((?:[^()\s]|\([^()\s]*\))+)(?:\s+"[^"]*")?\)/g, "<$2|$1>");
+  result = result.replace(/\[([^\]]+)\]\(((?:[^()\s]|\([^()\s]*\))+)(?:\s+"[^"]*")?\)/g, slackLink);
 
   // Restore URLs here (not in the final placeholder loop) so a stray
   // `](url)` with no link text, and the `&`-escape / list passes below, see
@@ -808,7 +822,9 @@ const PAGE_THEME = `
 function generateCopyPage(markdown) {
   const html = convertToHTML(markdown);
   return `<!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>Copy for Slack</title>
+<html><head><meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<title>Copy for Slack</title>
 <style>
 ${PAGE_THEME}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:15px;line-height:1.5;background:var(--page);color:var(--text);padding:20px;max-width:700px;margin:0 auto}
@@ -833,11 +849,15 @@ function generatePreviewPage(markdown, copyPagePath) {
   const mrkdwn = convertToMrkdwn(markdown);
   const escapedMrkdwn = mrkdwn.replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const timeStr = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  // Only the page's own script carries the nonce, so markup that slips in
+  // through the message cannot run script or inline event handlers.
+  const nonce = randomBytes(16).toString("base64");
 
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-${nonce}'; base-uri 'none'; form-action 'none'">
 <title>Slack Message Preview</title>
 <style>
 ${PAGE_THEME}
@@ -885,8 +905,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 <body>
 <div class="container">
 <div class="top-bar"><h1>Slack Message Preview</h1>
-<div class="btn-group"><button class="btn btn-primary" id="copy-btn" data-copy-page="${copyPagePath}" onclick="copyForSlack()">Copy for Slack</button>
-<button class="btn btn-secondary" onclick="copyMrkdwn()">Copy mrkdwn</button></div></div>
+<div class="btn-group"><button class="btn btn-primary" id="copy-btn" data-copy-page="${hrefAttr(copyPagePath)}">Copy for Slack</button>
+<button class="btn btn-secondary" data-copy-mrkdwn>Copy mrkdwn</button></div></div>
 <div class="message-wrapper">
 <div class="channel-bar"># <span>general</span></div>
 <div class="message"><div class="avatar">🤖</div>
@@ -895,12 +915,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 <span class="timestamp">${timeStr}</span></div>
 <div class="mc" id="mc">${html}</div></div></div></div>
 <div class="mrkdwn-section">
-<div class="mrkdwn-header" onclick="toggleMrkdwn()"><span>mrkdwn (for API / webhook)</span><span id="mt">▸</span></div>
+<div class="mrkdwn-header" id="mh"><span>mrkdwn (for API / webhook)</span><span id="mt">▸</span></div>
 <div class="mrkdwn-body" id="mb"><pre id="mrkdwn-text">${escapedMrkdwn}</pre>
-<button class="btn btn-secondary" onclick="copyMrkdwn()" style="margin-top:8px">Copy mrkdwn</button></div></div></div>
+<button class="btn btn-secondary" data-copy-mrkdwn style="margin-top:8px">Copy mrkdwn</button></div></div></div>
 <div class="toast" id="toast"></div>
 <footer class="project-link"><a href="https://github.com/karanb192/slack-message-formatter">Slack Message Formatter source</a></footer>
-<script>
+<script nonce="${nonce}">
 function copyForSlack(){
 const copyPage=document.getElementById('copy-btn').dataset.copyPage;
 window.open(copyPage,'_blank');
@@ -908,6 +928,9 @@ window.open(copyPage,'_blank');
 function copyMrkdwn(){navigator.clipboard.writeText(document.getElementById('mrkdwn-text').innerText).then(()=>showToast('mrkdwn copied!'))}
 function toggleMrkdwn(){const b=document.getElementById('mb');const t=document.getElementById('mt');b.classList.toggle('open');t.textContent=b.classList.contains('open')?'▾':'▸'}
 function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500)}
+document.getElementById('copy-btn').addEventListener('click',copyForSlack);
+document.getElementById('mh').addEventListener('click',toggleMrkdwn);
+document.querySelectorAll('[data-copy-mrkdwn]').forEach(b=>b.addEventListener('click',copyMrkdwn));
 </script>
 </body></html>`;
 }
