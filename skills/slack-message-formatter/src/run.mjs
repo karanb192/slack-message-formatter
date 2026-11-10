@@ -74,11 +74,43 @@ function displayWidth(s) {
   return w;
 }
 
+// An indented fence is still a fence. Left indented, it never reached the
+// fenced-block branch: under a list step the list parser folded it into the
+// item as one soft-wrapped line, so the commands became a single run of
+// inline code. List items here are a single line (a <br> inside <li> makes
+// Slack flatten the list), so move the fence to column 0 instead: the list
+// closes, the code block follows, and an ordered list resumes at its next
+// number.
+function liftIndentedFences(lines) {
+  const out = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.startsWith("```")) {
+      out.push(line);
+      for (i++; i < lines.length; i++) {
+        out.push(lines[i]);
+        if (lines[i].startsWith("```")) break;
+      }
+      continue;
+    }
+    const fence = line.match(/^(\s+)```/);
+    if (!fence) {
+      out.push(line);
+      continue;
+    }
+    const dedent = (l) => l.slice(Math.min(fence[1].length, l.match(/^\s*/)[0].length));
+    out.push(dedent(line));
+    for (i++; i < lines.length && !/^\s*```\s*$/.test(lines[i]); i++) out.push(dedent(lines[i]));
+    if (i < lines.length) out.push("```");
+  }
+  return out;
+}
+
 function convertToHTML(md) {
   // Parse into typed blocks, then join with spacing rules — see the join at
   // the bottom of this function.
   const blocks = [];
-  const lines = md.split("\n");
+  const lines = liftIndentedFences(md.split("\n"));
   let i = 0;
 
   while (i < lines.length) {

@@ -265,6 +265,7 @@ every message.
 
 ## Known Limitations
 
+- **A code block under a list item becomes its own block.** On the copy-paste path the list closes before the code block, and a numbered list resumes at its next number after it, so the code keeps its line breaks.
 - **Bare URLs** (`https://example.com` without link syntax) are not auto-linked. Use `[text](url)` syntax. Slack auto-links bare URLs when sent via API anyway.
 - **Only web and mail links are converted.** A target that does not start with `http://`, `https://` or `mailto:` (a relative path, `javascript:`, `data:`, or a Slack token such as `!channel`) stays as literal Markdown text on every output path, so text copied from a ticket or log cannot plant a script link or a channel mention.
 - **Deeply nested parenthesized URLs** like `(a_(b_(c)))` may not parse correctly. Single-level parens (e.g. Wikipedia URLs) work fine.
