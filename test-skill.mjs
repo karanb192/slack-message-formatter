@@ -2650,6 +2650,38 @@ test("mrkdwn: web link with underscores still converts after the target check", 
 }
 
 // =============================================================
+// FENCED CODE UNDER A LIST STEP
+// =============================================================
+
+test("html: fenced block under a numbered step keeps its lines and the list resumes", "html",
+  "1. Run the tests:\n   ```bash\n   cd api\n   make test\n   ```\n2. Push",
+  "<ol>\n<li>Run the tests:</li>\n</ol><br>\n<pre><code>cd api\nmake test</code></pre><br>\n<ol start=\"2\">\n<li>Push</li>\n</ol>");
+
+testContains("html: fenced block under a step keeps line breaks and drops the language tag", "html",
+  "1. Run the tests:\n   ```bash\n   cd api\n   make test\n   ```\n2. Push",
+  ["<pre><code>cd api\nmake test</code></pre>"], ["<code><code>", "bash"]);
+
+testContains("html: fenced block under a bullet keeps inner indentation", "html",
+  "- Check the config:\n  ```\n  key:\n    nested: 1\n  ```\n- Restart",
+  ["<pre><code>key:\n  nested: 1</code></pre>", "<li>Restart</li>"], ["<code><code>"]);
+
+testContains("html: blank lines around a step's fenced block do not change the result", "html",
+  "1. Run:\n\n   ```\n   x\n   ```\n\n2. Push\n3. Done",
+  ["<pre><code>x</code></pre>", "<ol start=\"2\">\n<li>Push</li>\n<li>Done</li>"], ["<code><code>"]);
+
+testContains("html: indented fence outside a list is a code block", "html",
+  "Intro\n\n  ```\n  x = 1\n  ```",
+  ["<pre><code>x = 1</code></pre>"], ["<code><code>"]);
+
+testContains("html: unclosed fence under a step still becomes a code block", "html",
+  "1. Run:\n   ```\n   x",
+  ["<li>Run:</li>", "<pre><code>x</code></pre>"], ["<code><code>"]);
+
+test("html: indented fence line inside a top-level fence stays code", "html",
+  "```\n- looks like a list\n  ```inner\n```\ntail",
+  "<pre><code>- looks like a list\n  ```inner</code></pre><br>\ntail");
+
+// =============================================================
 // SUMMARY
 // =============================================================
 
