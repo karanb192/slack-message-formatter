@@ -708,23 +708,23 @@ const JIRA_ENV = { JIRA_BASE_URL: "https://example.atlassian.net" };
 const JIRA_URL = "https://example.atlassian.net/browse";
 
 testContains("Bare key linked (html)", "html",
-  "Fix DEVOPS-14389 today",
-  [`<a href="${JIRA_URL}/DEVOPS-14389">DEVOPS-14389</a>`],
+  "Fix DEVOPS-12345 today",
+  [`<a href="${JIRA_URL}/DEVOPS-12345">DEVOPS-12345</a>`],
   [], JIRA_ENV);
 
 test("Bare key linked (mrkdwn)", "mrkdwn",
-  "Fix DEVOPS-14389 today",
-  `Fix <${JIRA_URL}/DEVOPS-14389|DEVOPS-14389> today`,
+  "Fix DEVOPS-12345 today",
+  `Fix <${JIRA_URL}/DEVOPS-12345|DEVOPS-12345> today`,
   JIRA_ENV);
 
 testContains("Multiple keys all linked", "mrkdwn",
-  "ENG-129313 blocks AT-813158",
-  [`<${JIRA_URL}/ENG-129313|ENG-129313>`, `<${JIRA_URL}/AT-813158|AT-813158>`],
+  "ENG-654321 blocks AT-111111",
+  [`<${JIRA_URL}/ENG-654321|ENG-654321>`, `<${JIRA_URL}/AT-111111|AT-111111>`],
   [], JIRA_ENV);
 
 testContains("Key with punctuation after", "mrkdwn",
-  "Done: DEVOPS-14389.",
-  [`<${JIRA_URL}/DEVOPS-14389|DEVOPS-14389>.`],
+  "Done: DEVOPS-12345.",
+  [`<${JIRA_URL}/DEVOPS-12345|DEVOPS-12345>.`],
   [], JIRA_ENV);
 
 testContains("Key with underscore in project", "mrkdwn",
@@ -733,23 +733,23 @@ testContains("Key with underscore in project", "mrkdwn",
   [], JIRA_ENV);
 
 test("Already-linked key not double-linked", "mrkdwn",
-  "[DEVOPS-14389](https://other.example.com/DEVOPS-14389)",
-  "<https://other.example.com/DEVOPS-14389|DEVOPS-14389>",
+  "[DEVOPS-12345](https://other.example.com/DEVOPS-12345)",
+  "<https://other.example.com/DEVOPS-12345|DEVOPS-12345>",
   JIRA_ENV);
 
 test("Key inside inline code not linked", "mrkdwn",
-  "Run `git checkout DEVOPS-14389`",
-  "Run `git checkout DEVOPS-14389`",
+  "Run `git checkout DEVOPS-12345`",
+  "Run `git checkout DEVOPS-12345`",
   JIRA_ENV);
 
 testContains("Key inside code block not linked", "mrkdwn",
-  "```\nbranch: DEVOPS-14389\n```",
-  ["branch: DEVOPS-14389"],
+  "```\nbranch: DEVOPS-12345\n```",
+  ["branch: DEVOPS-12345"],
   [JIRA_URL], JIRA_ENV);
 
 testContains("Key inside bare URL not linked", "mrkdwn",
-  "See https://ci.example.com/job/DEVOPS-14389/logs",
-  ["https://ci.example.com/job/DEVOPS-14389/logs"],
+  "See https://ci.example.com/job/DEVOPS-12345/logs",
+  ["https://ci.example.com/job/DEVOPS-12345/logs"],
   [JIRA_URL], JIRA_ENV);
 
 test("Lowercase key not linked", "mrkdwn",
@@ -767,22 +767,22 @@ test("Version-like suffix not linked", "mrkdwn",
   "see CVE-2024-12345", "see CVE-2024-12345", JIRA_ENV);
 
 test("No JIRA_BASE_URL → keys untouched", "mrkdwn",
-  "Fix DEVOPS-14389 today",
-  "Fix DEVOPS-14389 today");
+  "Fix DEVOPS-12345 today",
+  "Fix DEVOPS-12345 today");
 
 test("Trailing slash on base URL handled", "mrkdwn",
-  "Fix DEVOPS-14389",
-  `Fix <${JIRA_URL}/DEVOPS-14389|DEVOPS-14389>`,
+  "Fix DEVOPS-12345",
+  `Fix <${JIRA_URL}/DEVOPS-12345|DEVOPS-12345>`,
   { JIRA_BASE_URL: "https://example.atlassian.net/" });
 
 testContains("Key in heading linked (html)", "html",
-  "## DEVOPS-14389 rollout",
-  [`<a href="${JIRA_URL}/DEVOPS-14389">DEVOPS-14389</a>`],
+  "## DEVOPS-12345 rollout",
+  [`<a href="${JIRA_URL}/DEVOPS-12345">DEVOPS-12345</a>`],
   [], JIRA_ENV);
 
 testContains("Key in list item linked (mrkdwn)", "mrkdwn",
-  "- Fixed ENG-129313\n- Testing AT-813158",
-  [`• Fixed <${JIRA_URL}/ENG-129313|ENG-129313>`, `• Testing <${JIRA_URL}/AT-813158|AT-813158>`],
+  "- Fixed ENG-654321\n- Testing AT-111111",
+  [`• Fixed <${JIRA_URL}/ENG-654321|ENG-654321>`, `• Testing <${JIRA_URL}/AT-111111|AT-111111>`],
   [], JIRA_ENV);
 
 // =============================================================

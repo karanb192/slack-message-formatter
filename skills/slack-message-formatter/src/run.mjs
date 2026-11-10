@@ -784,7 +784,7 @@ const JIRA_KEY_DENYLIST = new Set([
 ]);
 
 /**
- * Turn bare Jira keys (DEVOPS-14389, ENG-129313) into Markdown links to
+ * Turn bare Jira keys (DEVOPS-12345, ENG-654321) into Markdown links to
  * `<baseUrl>/browse/<KEY>`. Runs on the raw Markdown before conversion, so
  * both the HTML and mrkdwn paths get clickable links. Keys inside code
  * spans/blocks, existing links, or URLs are left untouched.

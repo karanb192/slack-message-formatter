@@ -194,8 +194,8 @@ Set `JIRA_BASE_URL` and bare Jira keys are turned into links automatically:
 
 ```bash
 export JIRA_BASE_URL=https://yoursite.atlassian.net
-echo 'Fixed DEVOPS-14389' | node src/run.mjs mrkdwn
-# → Fixed <https://yoursite.atlassian.net/browse/DEVOPS-14389|DEVOPS-14389>
+echo 'Fixed DEVOPS-12345' | node src/run.mjs mrkdwn
+# → Fixed <https://yoursite.atlassian.net/browse/DEVOPS-12345|DEVOPS-12345>
 ```
 
 Keys inside code spans, code blocks, existing links, or URLs are left alone,

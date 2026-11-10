@@ -338,7 +338,7 @@ Slack mention tokens (`<@U012AB3CD>`, `<#C012AB3CD>`, `<!here>`, `<!channel>`,
 `<!everyone>`) **only resolve via the API/webhook path**. They do NOT resolve
 when pasted into Slack's compose box. Slack renders them as literal text.
 
-- **Copy-paste path:** write mentions as plain `@DisplayName` (e.g., `@Shakti`).
+- **Copy-paste path:** write mentions as plain `@DisplayName` (e.g., `@Priya`).
   Tell the user they'll need to re-type the `@` after pasting so Slack's
   autocomplete kicks in and links the user. Never emit `<@U...>` syntax on this
   path. (Defensively, the HTML converter renders any stray `<@U...>` / `<#C...>` /
