@@ -247,7 +247,7 @@ priority over length and layout preferences. Apply the meaning check before conv
   If `JIRA_BASE_URL` is set, the converter auto-links bare Jira keys for you,
   but explicit links in the Markdown are still preferred (they survive with
   any configuration and let you control the link target).
-- **Use blank lines between blocks.** Headline, context, bullet group, and
+- **Use blank lines between blocks.** Headline, context, bullet group, and any
   closing line are each their own block with a blank line between, because Slack
   collapses adjacent lines together without spacing.
 - **Keep extra detail optional.** Add only what the reader needs to understand
@@ -270,8 +270,6 @@ together, and let the meaning check take priority over their length targets.
 - Point 1
 - Point 2
 - Point 3
-
-**Ask:** one line.
 ```
 
 - **`🧵 for <topic>:` on line one.** The thread emoji, then `for`, then the
@@ -296,9 +294,8 @@ together, and let the meaning check take priority over their length targets.
   message understandable and actionable.
 - **Links live inside the points**, never in the topic line. Keep the topic line
   scannable in the channel sidebar.
-- **Close with a labeled line** when the thread needs something from someone:
-  `**Ask:**`, `**Impact:**`, or `**Next:**`. A pure FYI thread can end on its
-  last point.
+- **End on the last point by default.** A closing `**Ask:**`, `**Next:**` or
+  `**Impact:**` line is optional. See "Closing lines" for when to add one.
 
 ### Standalone announcement (no thread)
 
@@ -310,17 +307,30 @@ One line of context (with a link if relevant).
 - Evidence / detail bullet 1
 - Evidence / detail bullet 2
 - Evidence / detail bullet 3
-
-**Impact:** one line.
 ```
 
 - **Headline first**, bold, one line, optionally a status emoji (⚠️ 🚨 ✅ 🎉).
 - **One line of context**: what happened or why it matters, with a link.
 - **Use focused bullets for separate details.** A short second sentence may
   qualify a claim in the same bullet.
-- **End with a labeled line** (`**Impact:**`, `**Ask:**`, or `**Next:**`) so
-  readers know what to do without reading everything above.
-- Skip blocks that don't apply (a two-line FYI needs no bullets or Impact line).
+- **End on the last bullet by default.** A closing labeled line is optional;
+  see "Closing lines".
+- Skip blocks that don't apply (a two-line FYI needs no bullets).
+
+### Closing lines
+
+`**Ask:**`, `**Next:**` and `**Impact:**` are optional, and most messages need
+none of them. Add one only when the user stated it, or the supplied facts contain
+a concrete request, owner and next step, or consequence that the reader would
+otherwise miss.
+
+- **Never invent an ask.** Tagging someone is not a request; a tag can mean
+  "read this" or "for your awareness". Do not turn open questions from your own
+  analysis into questions for the tagged person.
+- **Do not fill the slot.** A closing line written to complete the template
+  pads the message and can misstate what the user wants from the reader.
+- **When unsure, leave it out.** The user can add a request in one line; a
+  wrong request has to be noticed and deleted.
 
 ## Mentions
 
