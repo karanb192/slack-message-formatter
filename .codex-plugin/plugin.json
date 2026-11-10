@@ -1,6 +1,6 @@
 {
   "name": "slack-message-formatter",
-  "version": "1.2.5",
+  "version": "1.2.6",
   "description": "Convert Markdown to rich HTML for pasting into Slack or mrkdwn for webhooks.",
   "author": {
     "name": "Karan Bansal",

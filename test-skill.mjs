@@ -111,6 +111,22 @@ testContains("Multiple formatting", "html",
   "**bold** and *italic* and ~~strike~~",
   ["<b>bold</b>", "<i>italic</i>", "<s>strike</s>"]);
 
+// One-character emphasis must close at its own delimiter, not at a later one.
+testContains("Single-char bold twice", "html", "**a** x **b**",
+  ["<b>a</b> x <b>b</b>"]);
+testContains("Single-char bold+italic twice", "html", "***a*** x ***b***",
+  ["<b><i>a</i></b> x <b><i>b</i></b>"]);
+testContains("Single-char strike twice", "html", "~~a~~ x ~~b~~",
+  ["<s>a</s> x <s>b</s>"]);
+testContains("Single-char italic (_) twice", "html", "_a_ x _b_",
+  ["<i>a</i> x <i>b</i>"]);
+testContains("Intraword asterisks don't swallow later italic", "html",
+  "calc 2*3*4 and later *italic* word",
+  ["2<i>3</i>4 and later <i>italic</i> word"]);
+testContains("Unclosed asterisk stays literal before real italic", "html",
+  "rate 5*x then *it*",
+  ["rate 5*x then <i>it</i>"]);
+
 section("HTML: Links");
 
 testContains("Basic link", "html",
@@ -272,6 +288,23 @@ test("Bold + Italic", "mrkdwn", "***hello***", "_*hello*_");
 test("Bold then italic", "mrkdwn",
   "**bold** and *italic*",
   "*bold* and _italic_");
+
+// One-character emphasis must close at its own delimiter, not at a later one.
+test("Single-char bold twice", "mrkdwn", "**a** x **b**", "*a* x *b*");
+test("Single-char bold (__) twice", "mrkdwn", "__a__ x __b__", "*a* x *b*");
+test("Single-char bold+italic twice", "mrkdwn", "***a*** x ***b***", "_*a*_ x _*b*_");
+test("Single-char strike twice", "mrkdwn", "~~a~~ x ~~b~~", "~a~ x ~b~");
+test("Single-char italic then a word", "mrkdwn", "*a* and *word*", "_a_ and _word_");
+test("Intraword asterisks don't swallow later italic", "mrkdwn",
+  "calc 2*3*4 and later *italic* word",
+  "calc 2_3_4 and later _italic_ word");
+test("Unclosed asterisk stays literal before real italic", "mrkdwn",
+  "rate 5*x then *it*",
+  "rate 5*x then _it_");
+test("Star-args stay literal before real italic", "mrkdwn",
+  "f(*args, **kwargs) and *it*",
+  "f(*args, **kwargs) and _it_");
+test("Bold may still contain a spaced asterisk", "mrkdwn", "**a * b** ok", "*a * b* ok");
 
 section("mrkdwn: Links");
 

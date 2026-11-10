@@ -233,7 +233,7 @@ node test-skill.mjs   # from repo root
 node --test test-distribution.mjs test-invitation.mjs test-eval-guards.mjs
 ```
 
-The formatter suite runs 440 checks covering:
+The formatter suite runs 455 checks covering:
 
 - Both HTML and mrkdwn output for every feature
 - Emoji shortcode conversion (85+ verified individually)
