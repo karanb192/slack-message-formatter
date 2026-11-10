@@ -46,7 +46,7 @@ Claude Code. The user's current project need not contain the formatter repo.
 Always generate the message content in **standard Markdown**. This is your native format and you produce it reliably. Use all Markdown features freely, because the converter handles everything:
 
 - `**bold**`, `*italic*`, `~~strikethrough~~`, `` `code` ``
-- `[text](url)` links
+- `[text](url)` links (`http://`, `https://` or `mailto:` targets only; anything else stays literal text)
 - `# Headings` (converted to bold in Slack)
 - Tables (pipe syntax, converted to HTML tables for paste, code blocks for API)
 - `- [ ]` / `- [x]` task lists (converted to emoji checkboxes)
