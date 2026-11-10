@@ -320,9 +320,9 @@ One line of context (with a link if relevant).
 ### Closing lines
 
 `**Ask:**`, `**Next:**` and `**Impact:**` are optional, and most messages need
-none of them. Add one only when the user stated it, or the supplied facts contain
-a concrete request, owner and next step, or consequence that the reader would
-otherwise miss.
+none of them. Add one, kept to one line, only when the user stated it, or the
+supplied facts contain a concrete request, a next step with an owner, or a
+consequence that the reader would otherwise miss.
 
 - **Never invent an ask.** Tagging someone is not a request; a tag can mean
   "read this" or "for your awareness". Do not turn open questions from your own
