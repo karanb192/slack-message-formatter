@@ -341,9 +341,12 @@ function quotedListHTML(items) {
 
 // Slack's markers have no way to start numbering above 1, so such a list
 // stays text in the quote: the reader sees the numbers the author typed.
+// No indent for sub-items: a run of non-breaking spaces at a line start makes
+// Slack's paste handler discard the HTML and paste the whole message as plain
+// text. The marker alone shows the level.
 function quotedListText(items) {
   return items.map(({ depth, ordered, number, content }) =>
-    "&#160;".repeat(4 * depth) + (ordered ? `${number}. ` : "• ") + inlineToHTML(content));
+    (ordered ? `${number}. ` : depth ? "◦ " : "• ") + inlineToHTML(content));
 }
 
 function quoteToHTML(quoteLines) {
