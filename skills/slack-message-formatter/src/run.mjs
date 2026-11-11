@@ -339,14 +339,15 @@ function quotedListHTML(items) {
   return html;
 }
 
-// Slack's markers have no way to start numbering above 1, so such a list
-// stays text in the quote: the reader sees the numbers the author typed.
-// No indent for sub-items: a run of non-breaking spaces at a line start makes
-// Slack's paste handler discard the HTML and paste the whole message as plain
-// text. The marker alone shows the level.
+// Slack's markers have no way to start numbering above 1, and a plain
+// <ol start> in a blockquote pastes as an unquoted list from 1. So such a
+// list stays text in the quote, with the numbers the author typed. A pasted
+// line that starts with "2. " makes Slack discard the HTML and paste the whole
+// message as plain text, so a word joiner (U+2060, invisible) sits before the
+// number and after its dot. Sub-items get a marker and no indent.
 function quotedListText(items) {
   return items.map(({ depth, ordered, number, content }) =>
-    (ordered ? `${number}. ` : depth ? "◦ " : "• ") + inlineToHTML(content));
+    (ordered ? `&#8288;${number}.&#8288; ` : depth ? "◦ " : "• ") + inlineToHTML(content));
 }
 
 function quoteToHTML(quoteLines) {
@@ -406,9 +407,7 @@ function quoteToHTML(quoteLines) {
       }
       i++;
     }
-    const startsAboveOne = items.some((it, k) => it.ordered && it.number !== "1" &&
-      !items.slice(0, k).some((o) => o.ordered && o.depth === it.depth));
-    if (startsAboveOne) {
+    if (items[0].ordered && items[0].number !== "1") {
       flushText();
       quoted.push(...quotedListText(items));
     } else {

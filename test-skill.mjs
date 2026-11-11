@@ -2871,9 +2871,9 @@ test("mrkdwn: bullets and tasks inside a quote are converted", "mrkdwn",
   "> - **Backups:** kept\n>   - sub\n> - [x] done\n> 1. one\n> plain - not a list",
   "> • *Backups:* kept\n>   • sub\n> :white_check_mark: done\n> 1. one\n> plain - not a list");
 
-test("html: a quoted numbered list that starts above 1 stays text with its own numbers", "html",
+test("html: a quoted numbered list that starts above 1 stays text, with its numbers shielded from Slack's plain-text switch", "html",
   "> Steps:\n>\n> 2. Second\n>    - sub\n> 3. Third\n> Then tell.",
-  "<blockquote>Steps:<br>\n2. Second<br>\n\u25e6 sub<br>\n3. Third<br>\nThen tell.</blockquote>");
+  "<blockquote>Steps:<br>\n&#8288;2.&#8288; Second<br>\n\u25e6 sub<br>\n&#8288;3.&#8288; Third<br>\nThen tell.</blockquote>");
 
 test("html: a checklist inside a quote is checkbox lines, and a bullet after it is a quoted list", "html",
   "> Checks:\n> - [x] done\n> - [ ] todo\n> - item\n> after",
