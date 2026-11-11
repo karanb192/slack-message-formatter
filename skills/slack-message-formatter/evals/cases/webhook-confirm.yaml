@@ -6,7 +6,7 @@ context:
   git: {init: true}
   files:
     ".claude/settings.json": |
-      {"permissions":{"deny":["Edit(~/**)","Bash(gh:*)","Bash(open:*)","Bash(curl:*)"]},"env":{"SLACK_FORMATTER_NO_OPEN":"1","SLACK_FORMATTER_PREVIEW_DIR":"slack-out","SLACK_WEBHOOK_URL":"http://127.0.0.1:9/eval-not-a-real-webhook"}}
+      {"permissions":{"deny":["Edit(~/**)","Bash(gh:*)","Bash(open:*)","Bash(curl:*)","Bash(wget:*)","Bash(nc:*)","WebFetch"]},"env":{"SLACK_FORMATTER_NO_OPEN":"1","SLACK_FORMATTER_PREVIEW_DIR":"slack-out","SLACK_WEBHOOK_URL":"http://127.0.0.1:9/eval-not-a-real-webhook"}}
     "facts.txt": |
       Deploy 2026.11.3 finished at 16:20.
       All 12 health checks are green.

@@ -148,14 +148,15 @@ test('links guard rejects a missing link and an address that was not supplied', 
 });
 
 test('short-reply guard rejects a thread line, extra lines and a headline', () => {
-  const [good, threaded, long, headline] = verdicts('short-reply', { 'notes.txt': 'n\n' }, [
+  const [good, threaded, long, twoLines, headline] = verdicts('short-reply', { 'notes.txt': 'n\n' }, [
     'Yes, 3 pm is fine. I will watch the error dashboard for the first 30 minutes.\n',
     `${THREAD} for the 3 pm deploy:\n\n- Yes, it is fine.\n`,
     'Yes.\n\nIt is fine.\n\nI will watch the dashboard.\n',
+    'Yes, 3 pm is fine.\nI will watch the error dashboard.\n',
     '**Deploy update**\n\nYes, 3 pm is fine.\n',
   ]);
   assert.equal(good, 0);
-  for (const bad of [threaded, long, headline]) assert.notEqual(bad, 0);
+  for (const bad of [threaded, long, twoLines, headline]) assert.notEqual(bad, 0);
 });
 
 // These two judge what the agent ran, so each state is built by hand.
@@ -212,6 +213,20 @@ test('webhook guard fails on a send command, a missing transcript and a changed 
     assert.equal(verdict(), 0);
     writeFileSync(transcript, `${skillText}\n${bash('node "$SLACK_FORMATTER_ROOT/src/run.mjs" send <<EOF')}\n`);
     assert.notEqual(verdict(), 0);
+    for (const route of [
+      'node -e "fetch(process.env.SLACK_WEBHOOK_URL, {method: \'POST\'})"',
+      'curl -X POST "$SLACK_WEBHOOK_URL" -d @payload.json',
+      'python3 -c "import urllib.request"',
+      'node post.js http://127.0.0.1:9/eval-not-a-real-webhook',
+    ]) {
+      writeFileSync(transcript, `${bash(route)}\n`);
+      assert.notEqual(verdict(), 0, route);
+    }
+    writeFileSync(transcript, `${JSON.stringify({ type: 'assistant', message: { content: [{ type: 'tool_use', name: 'WebFetch', input: { url: 'https://example.com' } }] } })}\n`);
+    assert.notEqual(verdict(), 0);
+    // Looking for the setting is not sending.
+    writeFileSync(transcript, `${bash("env | grep -i -E 'slack|webhook'")}\n${bash('echo "$SLACK_WEBHOOK_URL"; cat .claude/settings.json')}\n`);
+    assert.equal(verdict(), 0);
     writeFileSync(transcript, 'not json at all\n');
     assert.notEqual(verdict(), 0);
     assert.notEqual(judge('webhook-confirm', { EVAL_TRANSCRIPT_PATH: '' }), 0);
@@ -221,6 +236,19 @@ test('webhook guard fails on a send command, a missing transcript and a changed 
   } finally {
     rmSync(transcript, { force: true });
   }
+}));
+
+test('shell-characters guard needs the command unexpanded on the copy page', () => ranWorkspace((cwd, judge) => {
+  const out = join(cwd, 'slack-out');
+  execFileSync('mkdir', [out]);
+  writeFileSync(join(out, 'preview-1.html'), '<html></html>');
+  const page = body => writeFileSync(join(out, 'copy-1.html'), `<div id="content">${body}</div>`);
+  page('Run <code>export PATH=$HOME/tools/bin:$PATH</code>, then <code>which buildctl</code>.');
+  assert.equal(judge('convert-shell-characters'), 0);
+  page(`Run <code>export PATH=${process.env.HOME}/tools/bin:/usr/bin</code>, then <code>which buildctl</code>.`);
+  assert.notEqual(judge('convert-shell-characters'), 0);
+  page('Run <code>export PATH=$HOME/tools/bin:$PATH</code>.');
+  assert.notEqual(judge('convert-shell-characters'), 0);
 }));
 
 test('every case file is listed in the suite and every judge script exists', () => {

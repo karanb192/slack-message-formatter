@@ -22,5 +22,5 @@ judges:
     engine: {name: claude_code, model: {provider: anthropic, name: claude-sonnet-5}}
     pass_threshold: 1.0
     criteria:
-      - "The reply says yes to the 3 pm deploy and that the author will watch the error dashboard for the first 30 minutes. It adds no other commitment, headline or sign-off."
+      - "The draft is a single line. It says yes to the 3 pm deploy and that the author will watch the error dashboard for the first 30 minutes. It adds no other commitment, headline or sign-off."
       - "Does not run a converter, open a preview, or send a message."

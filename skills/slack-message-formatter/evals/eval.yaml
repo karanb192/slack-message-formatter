@@ -19,6 +19,7 @@ cases:
     - evals/cases/email-update.yaml
     - evals/cases/convert-and-hand-over.yaml
     - evals/cases/webhook-confirm.yaml
+    - evals/cases/convert-shell-characters.yaml
   defaults:
     timeout_seconds: 300
     max_turns: 12

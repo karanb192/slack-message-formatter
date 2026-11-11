@@ -19,9 +19,9 @@ endash=$(printf '\342\200\223')
 if grep -q -e "$emdash" -e "$endash" draft.md; then fail 'The draft uses an em or en dash.'; fi
 first=$(sed -n '1p' draft.md)
 lines=$(grep -c '[^[:space:]]' draft.md) || exit 1
-[ "$lines" -le 2 ] || fail "The reply has $lines lines; one or two were asked for."
+[ "$lines" -eq 1 ] || fail "The reply has $lines lines; one was asked for."
 case "$first" in "$thread"*) fail 'A reply was given a thread topic line.' ;; esac
 if grep -Eq '^[[:space:]]*([-+*][[:space:]]|#|\*\*)' draft.md; then
   fail 'A one-line reply was given a bullet, heading or bold headline.'
 fi
-echo 'The reply is one or two plain lines.'
+echo 'The reply is one plain line.'

@@ -260,7 +260,7 @@ These use model calls and test the installed plugin, not an uninstalled working
 copy. Update the installed plugin before a run, and rerun after installing a
 changed plugin before claiming its behavior passed.
 
-The thirteen cases cover:
+The fourteen cases cover:
 
 - **Meaning:** training, incident and billing updates, and preserving exact wording.
 - **Shape:** a thread that only tags people (no invented request), a thread whose
@@ -268,9 +268,11 @@ The thirteen cases cover:
 - **Selection:** a general question, a commit message and an email, none of which
   should load the skill.
 - **Delivery:** `convert-and-hand-over` runs the real converter, with the browser
-  suppressed and pages written into the test workspace. `webhook-confirm` checks
-  that the agent shows the text and waits before sending; its webhook points at
-  a closed local port, so nothing can reach Slack.
+  suppressed and pages written into the test workspace, and
+  `convert-shell-characters` checks that `$` and backticks in a message reach
+  the copy page unexpanded. `webhook-confirm` checks that the agent shows the
+  text and waits before sending; its webhook points at a closed local port, so
+  nothing can reach Slack.
 
 The other fixtures are draft-only and skip previews and sending; the Node tests
 cover conversion. Each judge script has Node tests in `test-eval-guards.mjs`
