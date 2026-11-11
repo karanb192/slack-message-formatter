@@ -1,0 +1,25 @@
+id: email-update
+title: An email is not a Slack draft
+input:
+  prompt: "Draft a short email to the finance team: the October invoice export is delayed to Friday because the vendor API was down on Tuesday. Answer here. Do not write files."
+context:
+  git: {init: true}
+  files:
+    ".claude/settings.json": |
+      {"permissions":{"deny":["Edit(~/**)","Bash"]}}
+judges:
+  - id: selection
+    type: rule_based
+    failure:
+      - tool_called:
+          name: Skill
+          args: {skill: "slack-message-formatter:slack-message-formatter"}
+  - id: files
+    type: script
+    script_path: evals/scripts/no-writes.sh
+  - id: clarity
+    type: agent_judge
+    engine: {name: claude_code, model: {provider: anthropic, name: claude-sonnet-5}}
+    pass_threshold: 1.0
+    criteria:
+      - "Gives an email saying the October invoice export is delayed to Friday because the vendor API was down on Tuesday. It is not framed as a Slack message and has no thread line."

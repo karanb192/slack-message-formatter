@@ -1,0 +1,32 @@
+id: thread-with-request
+title: A request in the facts survives
+input:
+  prompt: "Start a Slack thread from notes.txt and tag Sam. Save only draft.md; skip conversion, previews and sending for this task."
+context:
+  git: {init: true}
+  files:
+    ".claude/settings.json": |
+      {"permissions":{"deny":["Edit(~/**)","Bash"]}}
+    "notes.txt": |
+      Release 4.2 is ready: all 212 tests pass on the release branch.
+      One blocker: the database migration needs approval from Sam before it can run.
+      Sam needs to approve it by Thursday 5 pm, or the release moves to next Tuesday.
+      Migration plan: https://docs.example.com/migrations/4-2
+judges:
+  - id: selection
+    type: rule_based
+    success:
+      - tool_called:
+          name: Skill
+          args: {skill: "slack-message-formatter:slack-message-formatter"}
+  - id: files
+    type: script
+    script_path: evals/scripts/thread-with-request.sh
+  - id: clarity
+    type: agent_judge
+    engine: {name: claude_code, model: {provider: anthropic, name: claude-sonnet-5}}
+    pass_threshold: 1.0
+    criteria:
+      - "The request is explicit and complete: Sam must approve the database migration by Thursday 5 pm, and otherwise the release moves to next Tuesday. It is not dropped or softened into an FYI."
+      - "A reader can tell that the 212 passing tests are on the release branch and that the migration approval is the only blocker."
+      - "Does not run a converter, open a preview, or send a message."

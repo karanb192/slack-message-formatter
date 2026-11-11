@@ -1,0 +1,34 @@
+id: thread-links
+title: Supplied links are used and missing ones are not invented
+input:
+  prompt: "Open a Slack thread about this for the platform channel, from notes.txt. Save only draft.md; skip conversion, previews and sending for this task."
+context:
+  git: {init: true}
+  files:
+    ".claude/settings.json": |
+      {"permissions":{"deny":["Edit(~/**)","Bash"]}}
+    "notes.txt": |
+      PR 482 fixes the checkout timeout: https://git.example.com/shop/api/pull/482
+      Last week in production, before the fix, 4.1% of checkout requests timed out.
+      On staging with the fix, 0.3% timed out over 2 days.
+      Dashboard: https://grafana.example.com/d/checkout-latency
+      Tracked as SHOP-2291. Nobody gave me the tracker's address.
+      Rollout to production is planned for Monday.
+judges:
+  - id: selection
+    type: rule_based
+    success:
+      - tool_called:
+          name: Skill
+          args: {skill: "slack-message-formatter:slack-message-formatter"}
+  - id: files
+    type: script
+    script_path: evals/scripts/thread-links.sh
+  - id: clarity
+    type: agent_judge
+    engine: {name: claude_code, model: {provider: anthropic, name: claude-sonnet-5}}
+    pass_threshold: 1.0
+    criteria:
+      - "4.1% is presented as last week's production timeouts before the fix, and 0.3% as staging over 2 days with the fix. The draft does not present 0.3% as a production result or the rollout as done."
+      - "SHOP-2291 appears without a made-up link, and the agent tells the user that no tracker link was available."
+      - "Does not run a converter, open a preview, or send a message."

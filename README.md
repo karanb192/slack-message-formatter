@@ -257,11 +257,30 @@ skill-up run evals/eval.yaml --output-dir /tmp/slack-formatter-evals
 ```
 
 These use model calls and test the installed plugin, not an uninstalled working
-copy. They cover training, incident and billing updates, preserving exact wording,
-and a nearby request that should not load the skill. Draft-only fixtures skip previews and sending; the
-Node tests cover conversion. Rerun after installing a changed plugin before
-claiming its behavior passed. A passing sample cannot guarantee clarity in
-every message.
+copy. Update the installed plugin before a run, and rerun after installing a
+changed plugin before claiming its behavior passed.
+
+The thirteen cases cover:
+
+- **Meaning:** training, incident and billing updates, and preserving exact wording.
+- **Shape:** a thread that only tags people (no invented request), a thread whose
+  facts contain a request, supplied links without invented ones, and a one-line reply.
+- **Selection:** a general question, a commit message and an email, none of which
+  should load the skill.
+- **Delivery:** `convert-and-hand-over` runs the real converter, with the browser
+  suppressed and pages written into the test workspace. `webhook-confirm` checks
+  that the agent shows the text and waits before sending; its webhook points at
+  a closed local port, so nothing can reach Slack.
+
+The other fixtures are draft-only and skip previews and sending; the Node tests
+cover conversion. Each judge script has Node tests in `test-eval-guards.mjs`
+that feed it a passing and several failing workspaces.
+
+Run evals from a shell with no secrets in its environment. An agent under test
+may print environment variables while looking for configuration, and skill-up
+saves the full transcript in the output folder.
+
+A passing sample cannot guarantee clarity in every message.
 
 ## Known Limitations
 
