@@ -321,18 +321,36 @@ function protectListItemSpaces(html) {
 function quoteToHTML(quoteLines) {
   const bullet = /^\s*[-*+]\s+/;
   const numbered = /^\s*\d+[.)]\s+/;
+  const task = /^\s*[-*+]\s+\[( |[xX])\]\s+(.*)/;
   let html = "";
   let text = [];
+  // A blank quote line before a list or task run is spacing, not content.
   const flushText = () => {
+    while (text.length && !text[text.length - 1].trim()) text.pop();
     if (text.length) html += inlineToHTML(text.join("\n"));
     text = [];
   };
   let i = 0;
   while (i < quoteLines.length) {
+    if (task.test(quoteLines[i])) {
+      flushText();
+      const tasks = [];
+      while (i < quoteLines.length && task.test(quoteLines[i])) {
+        const tm = quoteLines[i].match(task);
+        tasks.push(`${tm[1] === " " ? "&#x1F532;" : "&#x2705;"} ${inlineToHTML(tm[2])}`);
+        i++;
+      }
+      if (html && !/<\/(?:ul|ol)>$/.test(html)) html += "<br>\n";
+      html += tasks.join("<br>\n");
+      if (i < quoteLines.length && !bullet.test(quoteLines[i]) && !numbered.test(quoteLines[i])) html += "<br>\n";
+      continue;
+    }
     const ordered = numbered.test(quoteLines[i]);
     // Mid-paragraph, only "1." starts a numbered list, as outside a quote.
+    // A blank quote line ends the paragraph.
+    const midParagraph = text.length > 0 && text[text.length - 1].trim() !== "";
     const startsList = bullet.test(quoteLines[i]) ||
-      (ordered && (!text.length || /^\s*1[.)]\s/.test(quoteLines[i])));
+      (ordered && (!midParagraph || /^\s*1[.)]\s/.test(quoteLines[i])));
     if (!startsList) {
       text.push(quoteLines[i]);
       i++;
@@ -341,7 +359,8 @@ function quoteToHTML(quoteLines) {
     flushText();
     const marker = ordered ? numbered : bullet;
     let end = i;
-    while (end < quoteLines.length && (marker.test(quoteLines[end]) || /^\s+\S/.test(quoteLines[end]))) end++;
+    while (end < quoteLines.length && !task.test(quoteLines[end]) &&
+           (marker.test(quoteLines[end]) || /^\s+\S/.test(quoteLines[end]))) end++;
     html += parseHTMLList(quoteLines.slice(i, end), 0, ordered).trimEnd();
     i = end;
   }

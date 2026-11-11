@@ -2864,6 +2864,18 @@ test("mrkdwn: bullets and tasks inside a quote are converted", "mrkdwn",
   "> - **Backups:** kept\n>   - sub\n> - [x] done\n> 1. one\n> plain - not a list",
   "> • *Backups:* kept\n>   • sub\n> :white_check_mark: done\n> 1. one\n> plain - not a list");
 
+test("html: a numbered list after a blank quote line starts at its own number", "html",
+  "> Steps:\n>\n> 2. Second\n> 3. Third",
+  "<blockquote>Steps:<ol start=\"2\">\n<li>Second</li>\n<li>Third</li>\n</ol></blockquote>");
+
+test("html: a checklist inside a quote is checkbox lines, not a broken list", "html",
+  "> Checks:\n> - [x] done\n> - [ ] todo\n> - item\n> after",
+  "<blockquote>Checks:<br>\n&#x2705; done<br>\n&#x1F532; todo<ul>\n<li>item</li>\n</ul>after</blockquote>");
+
+test("html: a blank line between quote paragraphs is kept", "html",
+  "> para one\n>\n> para two",
+  "<blockquote>para one<br>\n<br>\npara two</blockquote>");
+
 // =============================================================
 // SUMMARY
 // =============================================================
