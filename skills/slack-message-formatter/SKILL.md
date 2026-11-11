@@ -117,9 +117,9 @@ This will:
 Note: the script does NOT touch the clipboard, because programmatic clipboard writes
 don't survive Slack's paste handler. The user copies manually from the browser.
 
-To get the converted text itself, for a bot payload or another tool, use
-`mrkdwn` or `html` in place of `preview`. Each reads the same input and prints
-the result without writing pages or opening a browser.
+To get the converted text itself, replace `preview` with `mrkdwn` for a Slack
+bot or webhook payload, or with `html` for a tool that needs HTML. Each reads
+the same input and prints the result without writing pages or opening a browser.
 
 ### Step 4: Report to user
 
