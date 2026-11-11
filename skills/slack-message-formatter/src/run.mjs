@@ -198,7 +198,7 @@ function convertToHTML(md) {
         quoteLines.push(lines[i].replace(/^>\s?/, ""));
         i++;
       }
-      blocks.push(["block", `<blockquote>${quoteToHTML(quoteLines)}</blockquote>`]);
+      blocks.push(["block", quoteToHTML(quoteLines)]);
       continue;
     }
 
@@ -316,33 +316,64 @@ function protectListItemSpaces(html) {
     .replace(/(<\/(?:b|i|s|code|a)>) /g, "$1&#160;");
 }
 
-// A list inside a quote is still a list. Run through inlineToHTML with the
-// rest of the quote, its items pasted into Slack as literal "- " lines.
+// Slack's paste handler flattens a list nested in <blockquote>: the items
+// arrive as plain quote lines with no markers. It keeps a list as a quoted
+// list only when the list sits outside the blockquote and carries Slack's own
+// clipboard markers with data-border="1"; a sub-list must be a sibling list
+// with a deeper data-indent, because one nested in its parent <li> is merged
+// into that item's text. Verified by pasting each shape into Slack.
+function quotedListHTML(items) {
+  let html = "";
+  for (let k = 0; k < items.length; ) {
+    const { depth, ordered } = items[k];
+    const tag = ordered ? "ol" : "ul";
+    html += `<${tag} data-stringify-type="${ordered ? "ordered" : "unordered"}-list" ` +
+      `class="p-rich_text_list p-rich_text_list__${ordered ? "ordered" : "bullet"}" ` +
+      `data-indent="${depth}" data-border="1">`;
+    for (; k < items.length && items[k].depth === depth && items[k].ordered === ordered; k++) {
+      html += `<li data-stringify-indent="${depth}" data-stringify-border="1">` +
+        `${protectListItemSpaces(inlineToHTML(items[k].content))}</li>`;
+    }
+    html += `</${tag}>`;
+  }
+  return html;
+}
+
+// Slack's markers have no way to start numbering above 1, so such a list
+// stays text in the quote: the reader sees the numbers the author typed.
+function quotedListText(items) {
+  return items.map(({ depth, ordered, number, content }) =>
+    "&#160;".repeat(4 * depth) + (ordered ? `${number}. ` : "• ") + inlineToHTML(content));
+}
+
 function quoteToHTML(quoteLines) {
   const bullet = /^\s*[-*+]\s+/;
   const numbered = /^\s*\d+[.)]\s+/;
   const task = /^\s*[-*+]\s+\[( |[xX])\]\s+(.*)/;
   let html = "";
+  // Pieces of the quote that stay inside one <blockquote>, joined by <br>.
+  let quoted = [];
   let text = [];
   // A blank quote line before a list or task run is spacing, not content.
   const flushText = () => {
     while (text.length && !text[text.length - 1].trim()) text.pop();
-    if (text.length) html += inlineToHTML(text.join("\n"));
+    if (text.length) quoted.push(inlineToHTML(text.join("\n")));
     text = [];
+  };
+  const flushQuote = () => {
+    flushText();
+    if (quoted.length) html += `<blockquote>${quoted.join("<br>\n")}</blockquote>`;
+    quoted = [];
   };
   let i = 0;
   while (i < quoteLines.length) {
     if (task.test(quoteLines[i])) {
       flushText();
-      const tasks = [];
       while (i < quoteLines.length && task.test(quoteLines[i])) {
         const tm = quoteLines[i].match(task);
-        tasks.push(`${tm[1] === " " ? "&#x1F532;" : "&#x2705;"} ${inlineToHTML(tm[2])}`);
+        quoted.push(`${tm[1] === " " ? "&#x1F532;" : "&#x2705;"} ${inlineToHTML(tm[2])}`);
         i++;
       }
-      if (html && !/<\/(?:ul|ol)>$/.test(html)) html += "<br>\n";
-      html += tasks.join("<br>\n");
-      if (i < quoteLines.length && !bullet.test(quoteLines[i]) && !numbered.test(quoteLines[i])) html += "<br>\n";
       continue;
     }
     const ordered = numbered.test(quoteLines[i]);
@@ -356,15 +387,33 @@ function quoteToHTML(quoteLines) {
       i++;
       continue;
     }
-    flushText();
-    const marker = ordered ? numbered : bullet;
-    let end = i;
-    while (end < quoteLines.length && !task.test(quoteLines[end]) &&
-           (marker.test(quoteLines[end]) || /^\s+\S/.test(quoteLines[end]))) end++;
-    html += parseHTMLList(quoteLines.slice(i, end), 0, ordered).trimEnd();
-    i = end;
+    const items = [];
+    const indents = [];
+    while (i < quoteLines.length && !task.test(quoteLines[i])) {
+      const line = quoteLines[i];
+      const m = line.match(/^(\s*)(?:[-*+]|(\d+)[.)])\s+(.*)/);
+      if (m) {
+        while (indents.length && m[1].length < indents[indents.length - 1]) indents.pop();
+        if (!indents.length || m[1].length > indents[indents.length - 1]) indents.push(m[1].length);
+        items.push({ depth: indents.length - 1, ordered: m[2] !== undefined, number: m[2], content: m[3] });
+      } else if (/^\s+\S/.test(line)) {
+        items[items.length - 1].content += " " + line.trim();
+      } else {
+        break;
+      }
+      i++;
+    }
+    const startsAboveOne = items.some((it, k) => it.ordered && it.number !== "1" &&
+      !items.slice(0, k).some((o) => o.ordered && o.depth === it.depth));
+    if (startsAboveOne) {
+      flushText();
+      quoted.push(...quotedListText(items));
+    } else {
+      flushQuote();
+      html += quotedListHTML(items);
+    }
   }
-  flushText();
+  flushQuote();
   return html;
 }
 
@@ -927,6 +976,9 @@ pre{background:var(--code-bg);padding:10px;border-radius:4px;font-family:'SF Mon
 code{background:var(--raised);padding:2px 5px;margin:0 2px;border-radius:3px;font-family:'SF Mono',Monaco,Menlo,monospace;font-size:13px;color:var(--code-text)}
 pre code{background:none;padding:0;margin:0;color:inherit}
 blockquote{border-left:4px solid var(--border);padding:4px 12px;margin:8px 0;color:var(--muted)}
+ul[data-border="1"],ol[data-border="1"]{border-left:4px solid var(--border);margin:0;padding:2px 12px 2px 36px;color:var(--muted)}
+ul[data-indent="1"],ol[data-indent="1"]{padding-left:60px}
+ul[data-indent="2"],ol[data-indent="2"]{padding-left:84px}
 a{color:var(--link);text-decoration:none}
 ul,ol{padding-left:24px;margin:4px 0}li{margin:2px 0}
 hr{border:none;border-top:1px solid var(--border);margin:12px 0}
@@ -978,6 +1030,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .mc pre{background:var(--code-bg);border:1px solid var(--raised);border-radius:4px;padding:12px;margin:8px 0;overflow-x:auto}
 .mc pre code{background:none;border:none;padding:0;margin:0;font-size:13px;color:var(--text)}
 .mc blockquote{border-left:4px solid var(--border);padding:4px 12px;margin:4px 0;color:var(--muted)}
+.mc ul[data-border="1"],.mc ol[data-border="1"]{border-left:4px solid var(--border);margin:0;padding:2px 12px 2px 36px;color:var(--muted)}
+.mc ul[data-indent="1"],.mc ol[data-indent="1"]{padding-left:60px}
+.mc ul[data-indent="2"],.mc ol[data-indent="2"]{padding-left:84px}
 .mc ul,.mc ol{padding-left:24px;margin:4px 0}.mc li{margin:2px 0}
 .mc .mc table{border-collapse:collapse;margin:8px 0;font-size:14px}
 .mc th,.mc td{border:1px solid var(--border);padding:6px 12px}

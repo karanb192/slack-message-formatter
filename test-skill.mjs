@@ -2848,13 +2848,20 @@ test("html: an indented list keeps wrapped lines and later items", "html",
   "Intro\n  - a\n    - a1\n  - b\n  wrapped\n  - c",
   "Intro<br>\n<ul>\n<li>a\n<ul>\n<li>a1</li>\n</ul>\n</li>\n<li>b wrapped</li>\n<li>c</li>\n</ul>");
 
-test("html: a bulleted list inside a quote is a list", "html",
+// Quoted lists use the shapes Slack kept when each was pasted: a list outside
+// the blockquote with Slack's clipboard markers and data-border="1", and a
+// sub-list as a sibling list with a deeper data-indent.
+test("html: a bulleted list inside a quote is a quoted list Slack keeps on paste", "html",
   "**Weekly checks**\n\n> - **Backups:** Nightly snapshots are kept for 30 days.\n> - **Alerts:** On-call is paged within five minutes.",
-  "<b>Weekly checks</b><br><br>\n<blockquote><ul>\n<li><b>Backups:</b>&#160;Nightly snapshots are kept for 30 days.</li>\n<li><b>Alerts:</b>&#160;On-call is paged within five minutes.</li>\n</ul></blockquote>");
+  "<b>Weekly checks</b><br><br>\n<ul data-stringify-type=\"unordered-list\" class=\"p-rich_text_list p-rich_text_list__bullet\" data-indent=\"0\" data-border=\"1\"><li data-stringify-indent=\"0\" data-stringify-border=\"1\"><b>Backups:</b>&#160;Nightly snapshots are kept for 30 days.</li><li data-stringify-indent=\"0\" data-stringify-border=\"1\"><b>Alerts:</b>&#160;On-call is paged within five minutes.</li></ul>");
 
-test("html: a numbered list inside a quote keeps its intro, wrapped lines and sub-items", "html",
-  "> Steps:\n> 1. one\n>    wrapped\n> 2. two\n>    - sub\n> Done after",
-  "<blockquote>Steps:<ol>\n<li>one wrapped</li>\n<li>two\n<ul>\n<li>sub</li>\n</ul>\n</li>\n</ol>Done after</blockquote>");
+test("html: quote text, a quoted numbered list with wrapped lines and sub-items, then quote text", "html",
+  "> Steps:\n> 1. one\n>    wrapped\n>    - sub a\n>    - sub b\n> 2. two\n> Done after",
+  "<blockquote>Steps:</blockquote><ol data-stringify-type=\"ordered-list\" class=\"p-rich_text_list p-rich_text_list__ordered\" data-indent=\"0\" data-border=\"1\"><li data-stringify-indent=\"0\" data-stringify-border=\"1\">one wrapped</li></ol><ul data-stringify-type=\"unordered-list\" class=\"p-rich_text_list p-rich_text_list__bullet\" data-indent=\"1\" data-border=\"1\"><li data-stringify-indent=\"1\" data-stringify-border=\"1\">sub a</li><li data-stringify-indent=\"1\" data-stringify-border=\"1\">sub b</li></ul><ol data-stringify-type=\"ordered-list\" class=\"p-rich_text_list p-rich_text_list__ordered\" data-indent=\"0\" data-border=\"1\"><li data-stringify-indent=\"0\" data-stringify-border=\"1\">two</li></ol><blockquote>Done after</blockquote>");
+
+test("html: a quoted list never nests a list inside a blockquote or a list item", "html",
+  "> intro\n> - a\n>   - b",
+  "<blockquote>intro</blockquote><ul data-stringify-type=\"unordered-list\" class=\"p-rich_text_list p-rich_text_list__bullet\" data-indent=\"0\" data-border=\"1\"><li data-stringify-indent=\"0\" data-stringify-border=\"1\">a</li></ul><ul data-stringify-type=\"unordered-list\" class=\"p-rich_text_list p-rich_text_list__bullet\" data-indent=\"1\" data-border=\"1\"><li data-stringify-indent=\"1\" data-stringify-border=\"1\">b</li></ul>");
 
 test("html: a quote without a list is unchanged, and a wrapped year is not a list", "html",
   "> founded in\n> 2024. It was early",
@@ -2864,13 +2871,13 @@ test("mrkdwn: bullets and tasks inside a quote are converted", "mrkdwn",
   "> - **Backups:** kept\n>   - sub\n> - [x] done\n> 1. one\n> plain - not a list",
   "> • *Backups:* kept\n>   • sub\n> :white_check_mark: done\n> 1. one\n> plain - not a list");
 
-test("html: a numbered list after a blank quote line starts at its own number", "html",
-  "> Steps:\n>\n> 2. Second\n> 3. Third",
-  "<blockquote>Steps:<ol start=\"2\">\n<li>Second</li>\n<li>Third</li>\n</ol></blockquote>");
+test("html: a quoted numbered list that starts above 1 stays text with its own numbers", "html",
+  "> Steps:\n>\n> 2. Second\n>    - sub\n> 3. Third\n> Then tell.",
+  "<blockquote>Steps:<br>\n2. Second<br>\n&#160;&#160;&#160;&#160;\u2022 sub<br>\n3. Third<br>\nThen tell.</blockquote>");
 
-test("html: a checklist inside a quote is checkbox lines, not a broken list", "html",
+test("html: a checklist inside a quote is checkbox lines, and a bullet after it is a quoted list", "html",
   "> Checks:\n> - [x] done\n> - [ ] todo\n> - item\n> after",
-  "<blockquote>Checks:<br>\n&#x2705; done<br>\n&#x1F532; todo<ul>\n<li>item</li>\n</ul>after</blockquote>");
+  "<blockquote>Checks:<br>\n&#x2705; done<br>\n&#x1F532; todo</blockquote><ul data-stringify-type=\"unordered-list\" class=\"p-rich_text_list p-rich_text_list__bullet\" data-indent=\"0\" data-border=\"1\"><li data-stringify-indent=\"0\" data-stringify-border=\"1\">item</li></ul><blockquote>after</blockquote>");
 
 test("html: an uppercase X checks a quoted checklist item", "html",
   "> - [X] shipped",
