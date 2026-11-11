@@ -2872,6 +2872,10 @@ test("html: a checklist inside a quote is checkbox lines, not a broken list", "h
   "> Checks:\n> - [x] done\n> - [ ] todo\n> - item\n> after",
   "<blockquote>Checks:<br>\n&#x2705; done<br>\n&#x1F532; todo<ul>\n<li>item</li>\n</ul>after</blockquote>");
 
+test("html: an uppercase X checks a quoted checklist item", "html",
+  "> - [X] shipped",
+  "<blockquote>&#x2705; shipped</blockquote>");
+
 test("html: a blank line between quote paragraphs is kept", "html",
   "> para one\n>\n> para two",
   "<blockquote>para one<br>\n<br>\npara two</blockquote>");
