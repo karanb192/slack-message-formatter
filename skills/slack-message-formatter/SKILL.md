@@ -48,7 +48,7 @@ Always generate the message content in **standard Markdown**. This is your nativ
 - `**bold**`, `*italic*`, `~~strikethrough~~`, `` `code` ``
 - `[text](url)` links (`http://`, `https://` or `mailto:` targets only; anything else stays literal text)
 - `# Headings` (converted to bold in Slack)
-- Tables (pipe syntax, converted to HTML tables for paste, code blocks for API)
+- Tables (pipe syntax, converted to an aligned code block on both paths; keep cells plain text, because links and bold inside a cell are not rendered)
 - `- [ ]` / `- [x]` task lists (converted to emoji checkboxes)
 - `---` horizontal rules (converted to unicode separator)
 - Nested lists, blockquotes, code blocks with language hints
@@ -96,10 +96,15 @@ Run the converter script to transform the Markdown:
 ```bash
 # Replace this path with the directory containing the loaded SKILL.md.
 SLACK_FORMATTER_ROOT='/absolute/path/to/slack-message-formatter'
-node "$SLACK_FORMATTER_ROOT/src/run.mjs" preview <<'MARKDOWN'
+node "$SLACK_FORMATTER_ROOT/src/run.mjs" preview <<'SLACK_MESSAGE_EOF'
 <paste the markdown here>
-MARKDOWN
+SLACK_MESSAGE_EOF
 ```
+
+The shell ends the input at the first line that is exactly the delimiter, and
+runs whatever follows as commands. If the message contains a line reading
+`SLACK_MESSAGE_EOF`, pick another delimiter that appears nowhere in it. Keep
+the quotes around the delimiter so `$` and backticks in the message stay literal.
 
 This will:
 - Convert Markdown → Rich HTML (for copy-paste)
@@ -111,6 +116,10 @@ This will:
 
 Note: the script does NOT touch the clipboard, because programmatic clipboard writes
 don't survive Slack's paste handler. The user copies manually from the browser.
+
+To get the converted text itself, for a bot payload or another tool, use
+`mrkdwn` or `html` in place of `preview`. Each reads the same input and prints
+the result without writing pages or opening a browser.
 
 ### Step 4: Report to user
 
@@ -172,13 +181,17 @@ do not add a source link to every chat handoff.
 
 ## Sending via Webhook (API path)
 
-If the user wants to send directly to Slack via webhook:
+If the user wants to send directly to Slack via webhook, show them the final
+Markdown first and wait for an explicit go in this conversation. `send` posts
+to a real channel at once and cannot be taken back from here. A request to
+write, draft or format a message is not a go to send it; the only exception is
+a user who already told you to send this exact text.
 
 ```bash
 SLACK_FORMATTER_ROOT='/absolute/path/to/slack-message-formatter'
-node "$SLACK_FORMATTER_ROOT/src/run.mjs" send <<'MARKDOWN'
+node "$SLACK_FORMATTER_ROOT/src/run.mjs" send <<'SLACK_MESSAGE_EOF'
 <paste the markdown here>
-MARKDOWN
+SLACK_MESSAGE_EOF
 ```
 
 This uses the `SLACK_WEBHOOK_URL` environment variable (`CCH_SLA_WEBHOOK` is
@@ -241,12 +254,15 @@ priority over length and layout preferences. Apply the meaning check before conv
   period, a colon, or parentheses instead. This applies to every sentence,
   including headlines and bullets. Plain hyphens in ranges (`12:30-2:00 PM`)
   and compound words are fine.
-- **Always hyperlink ticket IDs and PR references.** Never write bare `ENG-12345`
-  or `#123`. Always use `[ENG-12345](https://yoursite.atlassian.net/browse/ENG-12345)`
-  or `[PR #123](url)`. This applies to every occurrence, not just the first.
-  If `JIRA_BASE_URL` is set, the converter auto-links bare Jira keys for you,
-  but explicit links in the Markdown are still preferred (they survive with
-  any configuration and let you control the link target).
+- **Hyperlink ticket IDs and PR references when you have the URL.** Write
+  `[ENG-12345](https://yoursite.atlassian.net/browse/ENG-12345)` or
+  `[PR #123](url)` on every occurrence, not just the first, using a URL the
+  user supplied, one you verified, or one built from a site address they gave.
+  `yoursite` in that example is a placeholder: never build a link from a
+  guessed hostname, because a wrong link is worse than a bare key. With no URL
+  to use, leave the key bare and tell the user which links are missing. If
+  `JIRA_BASE_URL` is set, the converter links bare Jira keys for you; explicit
+  links in the Markdown still survive any configuration.
 - **Use blank lines between blocks.** Headline, context, bullet group, and any
   closing line are each their own block with a blank line between, because Slack
   collapses adjacent lines together without spacing.
@@ -346,10 +362,14 @@ when pasted into Slack's compose box. Slack renders them as literal text.
   it still won't notify anyone.)
 - **API/Webhook path (`send`):** use `<@U012AB3CD>` / `<#C012AB3CD>` / `<!here>`
   as-is. The converter preserves them and Slack resolves them server-side.
+  Use only IDs the user supplied or you looked up; the IDs shown here are
+  placeholders, and a guessed ID notifies a stranger or nobody. `<!here>`,
+  `<!channel>` and `<!everyone>` notify many people at once: add one only
+  when the user asked for it.
 
 ## Important Notes
 
 - **Generate Markdown first**, then convert unless the user requested a draft only. Never generate mrkdwn or HTML directly; use the converter for those formats.
 - **Slack mention tokens only resolve on the API/webhook path.** See the "Mentions" section above for the per-path rules.
-- **Tables work via the HTML copy-paste path** but not via mrkdwn (Slack has no table syntax). Tables are converted to code blocks in the mrkdwn output.
+- **Tables become aligned code blocks on both paths**, because Slack messages have no table markup. Formatting inside a cell is shown as typed, so put links outside the table.
 - **Preview files are timestamped** so users can revisit them from conversation history.
