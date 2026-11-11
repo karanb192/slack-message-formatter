@@ -1,7 +1,7 @@
 id: commit-message
 title: A commit message is not a Slack draft
 input:
-  prompt: "Write a git commit message for this change: the retry loop in upload.py now waits 1, 2 and 4 seconds between attempts instead of retrying at once. Answer here. Do not write files."
+  prompt: "Write a git commit message for this change: the date parser in report.py now accepts dates with a timezone offset, such as 2026-03-01T10:00+05:30, instead of rejecting them. Answer here. Do not write files."
 context:
   git: {init: true}
   files:
@@ -22,4 +22,4 @@ judges:
     engine: {name: claude_code, model: {provider: anthropic, name: claude-sonnet-5}}
     pass_threshold: 1.0
     criteria:
-      - "Gives a commit message that says the upload retry loop now backs off 1, 2 and 4 seconds instead of retrying at once. It is not framed as a Slack message and has no thread line."
+      - "Gives a commit message that says the date parser in report.py now accepts dates with a timezone offset instead of rejecting them. It is not framed as a Slack message and has no thread line."
