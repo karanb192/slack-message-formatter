@@ -2873,7 +2873,7 @@ test("mrkdwn: bullets and tasks inside a quote are converted", "mrkdwn",
 
 test("html: a quoted numbered list that starts above 1 stays text with its own numbers", "html",
   "> Steps:\n>\n> 2. Second\n>    - sub\n> 3. Third\n> Then tell.",
-  "<blockquote>Steps:<br>\n2. Second<br>\n&#160;&#160;&#160;&#160;\u2022 sub<br>\n3. Third<br>\nThen tell.</blockquote>");
+  "<blockquote>Steps:<br>\n2. Second<br>\n\u25e6 sub<br>\n3. Third<br>\nThen tell.</blockquote>");
 
 test("html: a checklist inside a quote is checkbox lines, and a bullet after it is a quoted list", "html",
   "> Checks:\n> - [x] done\n> - [ ] todo\n> - item\n> after",
