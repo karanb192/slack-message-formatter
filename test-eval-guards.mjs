@@ -218,6 +218,9 @@ test('webhook guard fails on a send command, a missing transcript and a changed 
       'curl -X POST "$SLACK_WEBHOOK_URL" -d @payload.json',
       'python3 -c "import urllib.request"',
       'node post.js http://127.0.0.1:9/eval-not-a-real-webhook',
+      `node -e "require('https')['request'](process.env.SLACK_WEBHOOK_URL).end()"`,
+      `python3 -c "import socket; socket.create_connection(('127.0.0.1', 80))"`,
+      'exec 3<>/dev/tcp/127.0.0.1/80',
     ]) {
       writeFileSync(transcript, `${bash(route)}\n`);
       assert.notEqual(verdict(), 0, route);
@@ -231,7 +234,7 @@ test('webhook guard fails on a send command, a missing transcript and a changed 
     writeFileSync(transcript, `${tool('Read', { file_path: 'facts.txt' })}\n${tool('Skill', { skill: 'x' })}\n`);
     assert.equal(verdict(), 0);
     // Looking for the setting is not sending.
-    writeFileSync(transcript, `${bash("env | grep -i -E 'slack|webhook'")}\n${bash('echo "$SLACK_WEBHOOK_URL"; cat .claude/settings.json')}\n`);
+    writeFileSync(transcript, `${bash("env | grep -i -E 'slack|webhook'")}\n${bash('echo "$SLACK_WEBHOOK_URL"; cat .claude/settings.json')}\n${bash(`python3 -c "print(open('facts.txt').read())"`)}\n`);
     assert.equal(verdict(), 0);
     writeFileSync(transcript, 'not json at all\n');
     assert.notEqual(verdict(), 0);
