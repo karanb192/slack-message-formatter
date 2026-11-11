@@ -198,7 +198,7 @@ function convertToHTML(md) {
         quoteLines.push(lines[i].replace(/^>\s?/, ""));
         i++;
       }
-      blocks.push(["block", `<blockquote>${inlineToHTML(quoteLines.join("\n"))}</blockquote>`]);
+      blocks.push(["block", `<blockquote>${quoteToHTML(quoteLines)}</blockquote>`]);
       continue;
     }
 
@@ -314,6 +314,39 @@ function protectListItemSpaces(html) {
   return html
     .replace(/ (<(?:b|i|s|code|a)\b)/g, "&#160;$1")
     .replace(/(<\/(?:b|i|s|code|a)>) /g, "$1&#160;");
+}
+
+// A list inside a quote is still a list. Run through inlineToHTML with the
+// rest of the quote, its items pasted into Slack as literal "- " lines.
+function quoteToHTML(quoteLines) {
+  const bullet = /^\s*[-*+]\s+/;
+  const numbered = /^\s*\d+[.)]\s+/;
+  let html = "";
+  let text = [];
+  const flushText = () => {
+    if (text.length) html += inlineToHTML(text.join("\n"));
+    text = [];
+  };
+  let i = 0;
+  while (i < quoteLines.length) {
+    const ordered = numbered.test(quoteLines[i]);
+    // Mid-paragraph, only "1." starts a numbered list, as outside a quote.
+    const startsList = bullet.test(quoteLines[i]) ||
+      (ordered && (!text.length || /^\s*1[.)]\s/.test(quoteLines[i])));
+    if (!startsList) {
+      text.push(quoteLines[i]);
+      i++;
+      continue;
+    }
+    flushText();
+    const marker = ordered ? numbered : bullet;
+    let end = i;
+    while (end < quoteLines.length && (marker.test(quoteLines[end]) || /^\s+\S/.test(quoteLines[end]))) end++;
+    html += parseHTMLList(quoteLines.slice(i, end), 0, ordered).trimEnd();
+    i = end;
+  }
+  flushText();
+  return html;
 }
 
 function parseHTMLList(lines, startIdx, ordered, nested = false) {
@@ -753,11 +786,12 @@ function convertToMrkdwn(md) {
   result = result.replace(/\x00LU(\d+)\x00/g, (m, i) => linkUrls[+i] ?? m);
 
   // Task lists
-  result = result.replace(/^(\s*)[-*+]\s+\[[xX]\]\s+/gm, "$1:white_check_mark: ");
-  result = result.replace(/^(\s*)[-*+]\s+\[ \]\s+/gm, "$1:black_square_button: ");
+  // The optional quote marker keeps a list inside a quote a list.
+  result = result.replace(/^((?:(?:>|&gt;) ?)?\s*)[-*+]\s+\[[xX]\]\s+/gm, "$1:white_check_mark: ");
+  result = result.replace(/^((?:(?:>|&gt;) ?)?\s*)[-*+]\s+\[ \]\s+/gm, "$1:black_square_button: ");
 
   // Unordered list bullets
-  result = result.replace(/^(\s*)[-*+]\s+/gm, "$1• ");
+  result = result.replace(/^((?:(?:>|&gt;) ?)?\s*)[-*+]\s+/gm, "$1• ");
 
   // A list attaches tightly to the text line that introduces it — drop the
   // blank line between an intro line and its first bullet/task. Blank lines
