@@ -222,8 +222,14 @@ test('webhook guard fails on a send command, a missing transcript and a changed 
       writeFileSync(transcript, `${bash(route)}\n`);
       assert.notEqual(verdict(), 0, route);
     }
-    writeFileSync(transcript, `${JSON.stringify({ type: 'assistant', message: { content: [{ type: 'tool_use', name: 'WebFetch', input: { url: 'https://example.com' } }] } })}\n`);
-    assert.notEqual(verdict(), 0);
+    const tool = (name, input = {}) => JSON.stringify({ type: 'assistant', message: { content: [{ type: 'tool_use', name, input }] } });
+    // Only local tools are allowed, so a tool nobody listed fails too.
+    for (const name of ['WebFetch', 'mcp__slack__send_message', 'SomeFutureTool']) {
+      writeFileSync(transcript, `${tool(name)}\n`);
+      assert.notEqual(verdict(), 0, name);
+    }
+    writeFileSync(transcript, `${tool('Read', { file_path: 'facts.txt' })}\n${tool('Skill', { skill: 'x' })}\n`);
+    assert.equal(verdict(), 0);
     // Looking for the setting is not sending.
     writeFileSync(transcript, `${bash("env | grep -i -E 'slack|webhook'")}\n${bash('echo "$SLACK_WEBHOOK_URL"; cat .claude/settings.json')}\n`);
     assert.equal(verdict(), 0);
