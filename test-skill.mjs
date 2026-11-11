@@ -2848,6 +2848,22 @@ test("html: an indented list keeps wrapped lines and later items", "html",
   "Intro\n  - a\n    - a1\n  - b\n  wrapped\n  - c",
   "Intro<br>\n<ul>\n<li>a\n<ul>\n<li>a1</li>\n</ul>\n</li>\n<li>b wrapped</li>\n<li>c</li>\n</ul>");
 
+test("html: a bulleted list inside a quote is a list", "html",
+  "**Weekly checks**\n\n> - **Backups:** Nightly snapshots are kept for 30 days.\n> - **Alerts:** On-call is paged within five minutes.",
+  "<b>Weekly checks</b><br><br>\n<blockquote><ul>\n<li><b>Backups:</b>&#160;Nightly snapshots are kept for 30 days.</li>\n<li><b>Alerts:</b>&#160;On-call is paged within five minutes.</li>\n</ul></blockquote>");
+
+test("html: a numbered list inside a quote keeps its intro, wrapped lines and sub-items", "html",
+  "> Steps:\n> 1. one\n>    wrapped\n> 2. two\n>    - sub\n> Done after",
+  "<blockquote>Steps:<ol>\n<li>one wrapped</li>\n<li>two\n<ul>\n<li>sub</li>\n</ul>\n</li>\n</ol>Done after</blockquote>");
+
+test("html: a quote without a list is unchanged, and a wrapped year is not a list", "html",
+  "> founded in\n> 2024. It was early",
+  "<blockquote>founded in<br>\n2024. It was early</blockquote>");
+
+test("mrkdwn: bullets and tasks inside a quote are converted", "mrkdwn",
+  "> - **Backups:** kept\n>   - sub\n> - [x] done\n> 1. one\n> plain - not a list",
+  "> • *Backups:* kept\n>   • sub\n> :white_check_mark: done\n> 1. one\n> plain - not a list");
+
 // =============================================================
 // SUMMARY
 // =============================================================
