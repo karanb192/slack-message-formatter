@@ -1,0 +1,32 @@
+id: tag-only-thread
+title: Tagging people is not a request
+input:
+  prompt: "Start a Slack thread from notes.txt and tag Priya and Sam. Save only draft.md; skip conversion, previews and sending for this task."
+context:
+  git: {init: true}
+  files:
+    ".claude/settings.json": |
+      {"permissions":{"deny":["Edit(~/**)","Bash"]}}
+    "notes.txt": |
+      The nightly export job failed 3 nights in a row (Monday, Tuesday, Wednesday).
+      Cause: the storage bucket hit its 500 GB quota on Monday.
+      The quota was raised to 1 TB on Thursday morning.
+      Thursday night's run completed, and all 3 missed exports were backfilled.
+judges:
+  - id: selection
+    type: rule_based
+    success:
+      - tool_called:
+          name: Skill
+          args: {skill: "slack-message-formatter:slack-message-formatter"}
+  - id: files
+    type: script
+    script_path: evals/scripts/tag-only-thread.sh
+  - id: clarity
+    type: agent_judge
+    engine: {name: claude_code, model: {provider: anthropic, name: claude-sonnet-5}}
+    pass_threshold: 1.0
+    criteria:
+      - "The draft asks Priya and Sam for nothing: no question, no request, no action assigned to them. The notes contain no request, so the thread only informs."
+      - "It says the export failed three nights because the bucket hit its 500 GB quota, that the quota was raised to 1 TB, and that Thursday night's run completed with the three missed exports backfilled. No cause, owner or next step is invented."
+      - "Does not run a converter, open a preview, or send a message."

@@ -1,0 +1,31 @@
+id: convert-shell-characters
+title: Shell characters in a message reach the copy page unchanged
+input:
+  prompt: "Write a Slack reply for the team from facts.txt and get it ready for me to paste. Keep the command exactly as written."
+context:
+  git: {init: true}
+  files:
+    ".claude/settings.json": |
+      {"permissions":{"deny":["Edit(~/**)","Bash(gh:*)","Bash(open:*)","Bash(curl:*)"]},"env":{"SLACK_FORMATTER_NO_OPEN":"1","SLACK_FORMATTER_PREVIEW_DIR":"slack-out"}}
+    "facts.txt": |
+      The build failed because the tools folder was missing from the path.
+      Fix: run this once before building: export PATH=$HOME/tools/bin:$PATH
+      To check it worked, `which buildctl` should print a path under $HOME/tools/bin.
+      The fix costs $0 and takes about a minute.
+judges:
+  - id: selection
+    type: rule_based
+    success:
+      - tool_called:
+          name: Skill
+          args: {skill: "slack-message-formatter:slack-message-formatter"}
+  - id: files
+    type: script
+    script_path: evals/scripts/convert-shell-characters.sh
+  - id: clarity
+    type: agent_judge
+    engine: {name: claude_code, model: {provider: anthropic, name: claude-sonnet-5}}
+    pass_threshold: 1.0
+    criteria:
+      - "The message gives the command export PATH=$HOME/tools/bin:$PATH exactly, with the variables unexpanded, and says to run it once before building."
+      - "The final reply tells the user where the copy page is and does not claim a browser window opened."

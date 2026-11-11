@@ -1,0 +1,26 @@
+id: short-reply
+title: A one-line reply stays one line
+input:
+  prompt: "Dana asked in the thread whether the 3 pm deploy is still fine. Give me a one-line Slack reply: yes, and I will watch the error dashboard for the first 30 minutes. Save only draft.md; skip conversion, previews and sending for this task."
+context:
+  git: {init: true}
+  files:
+    ".claude/settings.json": |
+      {"permissions":{"deny":["Edit(~/**)","Bash"]}}
+judges:
+  - id: selection
+    type: rule_based
+    success:
+      - tool_called:
+          name: Skill
+          args: {skill: "slack-message-formatter:slack-message-formatter"}
+  - id: files
+    type: script
+    script_path: evals/scripts/short-reply.sh
+  - id: clarity
+    type: agent_judge
+    engine: {name: claude_code, model: {provider: anthropic, name: claude-sonnet-5}}
+    pass_threshold: 1.0
+    criteria:
+      - "The draft is a single line. It says yes to the 3 pm deploy and that the author will watch the error dashboard for the first 30 minutes. It adds no other commitment, headline or sign-off."
+      - "Does not run a converter, open a preview, or send a message."

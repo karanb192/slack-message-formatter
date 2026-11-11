@@ -1,0 +1,25 @@
+id: commit-message
+title: A commit message is not a Slack draft
+input:
+  prompt: "Write a git commit message for this change: the retry loop in upload.py now waits 1, 2 and 4 seconds between attempts instead of retrying at once. Answer here. Do not write files."
+context:
+  git: {init: true}
+  files:
+    ".claude/settings.json": |
+      {"permissions":{"deny":["Edit(~/**)","Bash"]}}
+judges:
+  - id: selection
+    type: rule_based
+    failure:
+      - tool_called:
+          name: Skill
+          args: {skill: "slack-message-formatter:slack-message-formatter"}
+  - id: files
+    type: script
+    script_path: evals/scripts/no-writes.sh
+  - id: clarity
+    type: agent_judge
+    engine: {name: claude_code, model: {provider: anthropic, name: claude-sonnet-5}}
+    pass_threshold: 1.0
+    criteria:
+      - "Gives a commit message that says the upload retry loop now backs off 1, 2 and 4 seconds instead of retrying at once. It is not framed as a Slack message and has no thread line."

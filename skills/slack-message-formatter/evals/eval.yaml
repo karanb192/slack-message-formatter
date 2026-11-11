@@ -11,6 +11,15 @@ cases:
     - evals/cases/plain-explanation.yaml
     - evals/cases/format-only.yaml
     - evals/cases/billing-update.yaml
+    - evals/cases/tag-only-thread.yaml
+    - evals/cases/thread-with-request.yaml
+    - evals/cases/thread-links.yaml
+    - evals/cases/short-reply.yaml
+    - evals/cases/commit-message.yaml
+    - evals/cases/email-update.yaml
+    - evals/cases/convert-and-hand-over.yaml
+    - evals/cases/webhook-confirm.yaml
+    - evals/cases/convert-shell-characters.yaml
   defaults:
     timeout_seconds: 300
     max_turns: 12
