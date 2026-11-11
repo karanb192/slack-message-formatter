@@ -2682,6 +2682,173 @@ test("html: indented fence line inside a top-level fence stays code", "html",
   "<pre><code>- looks like a list\n  ```inner</code></pre><br>\ntail");
 
 // =============================================================
+// FULL MESSAGES
+// =============================================================
+// Each message mixes the features a real Slack update uses, so a change that
+// breaks how blocks sit next to each other fails here even when every
+// single-feature test above still passes.
+
+{
+  const message = [
+    "**Deploy update: checkout service**",
+    "",
+    "The 2.14 release is live in staging. Two things changed:",
+    "",
+    "- Retries now back off for up to 30 seconds",
+    "- The `ORDER_TIMEOUT` setting moved to the [config repo](https://example.com/config)",
+    "",
+    "To verify on your machine:",
+    "",
+    "1. Pull the branch:",
+    "   ```bash",
+    "   git pull origin release-2.14",
+    "   make test",
+    "   ```",
+    "2. Check that the cost shows as $5 and not `$5.00`",
+    "3. Reply here with the result",
+    "",
+    "> Production rollout is planned for Thursday.",
+    "",
+    "@Priya can you confirm the load test by Wednesday?",
+  ].join("\n");
+  test("full message: release update with steps, a code block and a quote", "html", message, [
+    "<b>Deploy update: checkout service</b><br><br>",
+    "The 2.14 release is live in staging. Two things changed:<br>",
+    "<ul>",
+    "<li>Retries now back off for up to 30 seconds</li>",
+    "<li>The&#160;<code>ORDER_TIMEOUT</code>&#160;setting moved to the&#160;<a href=\"https://example.com/config\">config repo</a></li>",
+    "</ul><br>",
+    "To verify on your machine:<br>",
+    "<ol>",
+    "<li>Pull the branch:</li>",
+    "</ol><br>",
+    "<pre><code>git pull origin release-2.14",
+    "make test</code></pre><br>",
+    "<ol start=\"2\">",
+    "<li>Check that the cost shows as $5 and not&#160;<code>$5.00</code></li>",
+    "<li>Reply here with the result</li>",
+    "</ol><br>",
+    "<blockquote>Production rollout is planned for Thursday.</blockquote><br>",
+    "@Priya can you confirm the load test by Wednesday?",
+  ].join("\n"));
+  test("full message: release update with steps, a code block and a quote", "mrkdwn", message, [
+    "*Deploy update: checkout service*",
+    "",
+    "The 2.14 release is live in staging. Two things changed:",
+    "• Retries now back off for up to 30 seconds",
+    "• The `ORDER_TIMEOUT` setting moved to the <https://example.com/config|config repo>",
+    "",
+    "To verify on your machine:",
+    "1. Pull the branch:",
+    "   ```",
+    "   git pull origin release-2.14",
+    "   make test",
+    "   ```",
+    "2. Check that the cost shows as $5 and not `$5.00`",
+    "3. Reply here with the result",
+    "",
+    "> Production rollout is planned for Thursday.",
+    "",
+    "@Priya can you confirm the load test by Wednesday?",
+  ].join("\n"));
+}
+
+{
+  const message = [
+    "Looked into this. The export job fails only for accounts with more than 10,000 rows, because the query times out after 30 seconds.",
+    "",
+    "Fix is in [PR 482](https://example.com/pull/482). ~~Restarting the worker~~ does not help.",
+    "",
+    "| Account size | Before | After |",
+    "|---|---|---|",
+    "| 1,000 rows | 2s | 2s |",
+    "| 50,000 rows | timeout | 11s |",
+    "",
+    "**Next step:** Sam reviews the PR today, and I deploy tomorrow morning.",
+  ].join("\n");
+  test("full message: thread reply with a link, a table and a next step", "html", message, [
+    "Looked into this. The export job fails only for accounts with more than 10,000 rows, because the query times out after 30 seconds.<br><br>",
+    "Fix is in <a href=\"https://example.com/pull/482\">PR 482</a>. <s>Restarting the worker</s> does not help.",
+    "<pre><code>Account size | Before  | After",
+    "-------------|---------|------",
+    "1,000 rows   | 2s      | 2s   ",
+    "50,000 rows  | timeout | 11s</code></pre><br>",
+    "<b>Next step:</b> Sam reviews the PR today, and I deploy tomorrow morning.",
+  ].join("\n"));
+  test("full message: thread reply with a link, a table and a next step", "mrkdwn", message, [
+    "Looked into this. The export job fails only for accounts with more than 10,000 rows, because the query times out after 30 seconds.",
+    "",
+    "Fix is in <https://example.com/pull/482|PR 482>. ~Restarting the worker~ does not help.",
+    "",
+    "```",
+    "| Account size | Before | After |",
+    "|---|---|---|",
+    "| 1,000 rows | 2s | 2s |",
+    "| 50,000 rows | timeout | 11s |",
+    "```",
+    "",
+    "*Next step:* Sam reviews the PR today, and I deploy tomorrow morning.",
+  ].join("\n"));
+}
+
+{
+  const message = [
+    "## Weekly notes",
+    "",
+    "### Done",
+    "- [x] Migrated the billing cron",
+    "- [ ] Rotate the staging keys",
+    "  - waiting on *access*",
+    "  - tracked in ENG-654321",
+    "",
+    "### Risks",
+    "Disk usage is at 85% on `db-2`; see <https://example.com/dash?a=1&b=2>.",
+    "",
+    "---",
+    "",
+    "Thanks all :tada: <!here>",
+  ].join("\n");
+  test("full message: weekly notes with headings, a checklist, a rule and a mention", "html", message, [
+    "<b>Weekly notes</b><br><br>",
+    "<b>Done</b><br>",
+    "&#x2705; Migrated the billing cron<br>",
+    "&#x1F532; Rotate the staging keys<br><br>",
+    "<ul>",
+    "<li>waiting on&#160;<i>access</i></li>",
+    "<li>tracked in ENG-654321</li>",
+    "</ul><br>",
+    "<b>Risks</b><br><br>",
+    "Disk usage is at 85% on <code>db-2</code>; see <a href=\"https://example.com/dash?a=1&amp;b=2\">https://example.com/dash?a=1&amp;b=2</a>.<br><br>",
+    "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━<br><br>",
+    "Thanks all 🎉 @here",
+  ].join("\n"));
+  test("full message: weekly notes with headings, a checklist, a rule and a mention", "mrkdwn", message, [
+    "*Weekly notes*",
+    "",
+    "*Done*",
+    ":white_check_mark: Migrated the billing cron",
+    ":black_square_button: Rotate the staging keys",
+    "  • waiting on _access_",
+    "  • tracked in ENG-654321",
+    "",
+    "*Risks*",
+    "Disk usage is at 85% on `db-2`; see <https://example.com/dash?a=1&b=2>.",
+    "",
+    "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+    "",
+    "Thanks all :tada: <!here>",
+  ].join("\n"));
+}
+
+test("html: a list that starts indented keeps its items as siblings", "html",
+  "- [ ] Rotate the keys\n  - waiting on access\n  - tracked in ENG-654321",
+  "&#x1F532; Rotate the keys<br><br>\n<ul>\n<li>waiting on access</li>\n<li>tracked in ENG-654321</li>\n</ul>");
+
+test("html: an indented list keeps wrapped lines and later items", "html",
+  "Intro\n  - a\n    - a1\n  - b\n  wrapped\n  - c",
+  "Intro<br>\n<ul>\n<li>a\n<ul>\n<li>a1</li>\n</ul>\n</li>\n<li>b wrapped</li>\n<li>c</li>\n</ul>");
+
+// =============================================================
 // SUMMARY
 // =============================================================
 
