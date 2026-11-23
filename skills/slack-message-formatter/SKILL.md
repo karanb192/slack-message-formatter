@@ -78,9 +78,9 @@ could infer a different meaning, make the relationship explicit before convertin
 
 Do not add these as mandatory sections to every message. Test the draft by
 paraphrasing its meaning without the surrounding conversation, then compare
-that reading with the supplied facts. In a thread reply, the thread is part of
-the reader's context: keep the words that prevent a misreading, not the ones
-that repeat what the thread already says. Revise any mismatch or plausible second
+that reading with the supplied facts. In a thread reply, treat as known only
+what the thread visibly says (text the user supplied or you read): do not
+repeat it, and keep everything else a reader needs. Revise any mismatch or plausible second
 reading. If an essential fact is missing, ask a focused question or explicitly
 state what is unknown; do not invent it. A clear two-line reply stays two lines.
 For a format-only request that requires the original wording, flag ambiguity
@@ -239,16 +239,17 @@ priority over length and layout preferences. Apply the meaning check before conv
 - **Use bullets for separate points.** Keep a claim and its qualification
   together, even when that takes two short sentences. A simple reply does not
   need a headline or extra bullets to fill a template.
-- **Length targets.** A thread reply is 1-3 lines: the answer, the ask or the
-  update, and nothing the thread already says. A new thread or announcement is
-  a short headline and as few bullets as its points need, at most five. Cut
-  repetition and incidental detail before removing subjects, units, conditions
-  or qualifications needed to understand the claim.
+- **Length targets.** A thread reply is 1-3 short sentences: the answer, the
+  ask or the update. A new thread or announcement keeps its template below,
+  with as few bullets as its points need, at most five. Cut repetition and
+  incidental detail before removing subjects, units, conditions or
+  qualifications needed to understand the claim.
 - **Every line earns its place.** Before converting, test each line: if the
   reader loses nothing they need to understand or act when it goes, cut it;
-  if two lines make one point, merge them. Evidence (counts, sources, method,
-  caveats, how you checked) goes in only when the user asked for it or the
-  reader needs it to act. Otherwise link to where it lives.
+  if two lines make one point, merge them. How you know (sources, method,
+  how you checked) goes in only when the user asked for it or the reader needs
+  it to act; a link can carry it instead. Keep every number, condition or
+  caveat whose removal would change the claim.
 - **Cut ruthlessly.** No preamble ("I wanted to share…", "Quick update on…"),
   no filler ("as you may know", "just", "basically"), no restating the
   headline in the context line, no sign-offs. Lead with the point.
