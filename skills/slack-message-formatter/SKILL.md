@@ -234,7 +234,7 @@ Slack uses **mrkdwn** (not Markdown). Key differences:
 priority over length and layout preferences. Apply the meaning check before conversion.**
 
 - **Choose the shape from the request.** A reply answers directly. A new thread
-  opens with `🧵 for <topic>:`; a standalone announcement uses its own shape.
+  opens with a topic line (see "Thread starter"); a standalone announcement uses its own shape.
   Default to a new thread when the request gives no placement.
 - **Use bullets for separate points.** Keep a claim and its qualification
   together, even when that takes two short sentences. A simple reply does not
@@ -286,42 +286,50 @@ together, and let the meaning check take priority over their length targets.
 ### Thread starter (default)
 
 ```markdown
-🧵 for <topic>: @Person @Person
+🧵 for <topic>, [ABC-123](url): @Person @Person
 
 - Point 1
 - Point 2
 - Point 3
 ```
 
-- **`🧵 for <topic>:` on line one.** The thread emoji, then `for`, then the
-  topic, ending with a colon. No bold. Emit the literal 🧵 character rather than
+- **Line one, in this order:** the thread emoji, `for`, the topic, then the
+  tracking link after a comma if there is one, then a colon, then the tags.
+  No bold. Emit the literal 🧵 character rather than
   the `:thread:` shortcode, so it survives the copy-paste path as well as the
   API path. The topic is a short noun phrase naming what the thread is about,
   not a sentence: "🧵 for the failing nightly build:", never "🧵 for discussing
   why the nightly build keeps failing".
-- **Tag the people who must read it at the end of the topic line**, after the
-  colon, never on a line of their own. Use people the user named; do not block
+- **Put the tracking link on the topic line**, right after the topic: the one
+  ticket, PR or doc the thread is about, so the first line says where the work
+  is tracked. Only that one link; every other link goes in the points. Leave it
+  out when there is no single tracking item. If the topic already names the
+  tracking ticket, PR or doc, link that mention in place and add nothing
+  after the topic: one link to it on the line, never two.
+- **Tag the people who must act, and anyone the user asks to tag, at the end
+  of the topic line**, after the colon, never on a line of their own. A tag
+  alone does not assign work. Use people the user named; do not block
   a draft to ask for optional tags. On the copy-paste path write them as plain `@Display Name`; see
   "Mentions" for why the user must re-type the `@` after pasting.
 - **Points go directly under it.** Use as few bullets as the points need, at
   most five, and no context sentence in between. The topic line is the context, so repeating it wastes the
   reader's first line.
-- **Every artifact the reader needs to judge the thread gets a link**, in the
-  points: the ticket, and also the failing build, blocked PR, dashboard, or log
-  the thread is about. A reader should never have to ask "which PR?".
+- **Every artifact the reader needs to judge the thread gets a link**: the
+  tracking item on the topic line, and the failing build, blocked PR, dashboard,
+  or log in the points. A reader should never have to ask "which PR?".
   Use supplied or verified URLs. If an essential link is unavailable, ask for
   it or say it is missing; never invent a destination to fill the template.
   Omit an unverified supporting link when the supplied facts already make the
   message understandable and actionable.
-- **Links live inside the points**, never in the topic line. Keep the topic line
-  scannable in the channel sidebar.
+- **Keep the topic line scannable in the channel sidebar:** topic, tracking
+  link, tags, and nothing else.
 - **End on the last point by default.** A closing `**Ask:**`, `**Next:**` or
   `**Impact:**` line is optional. See "Closing lines" for when to add one.
 
 ### Standalone announcement (no thread)
 
 ```markdown
-**Bold headline** ⚠️
+**Bold headline** ⚠️ [ABC-123](url) @Person
 
 One line of context (with a link if relevant).
 
@@ -331,7 +339,12 @@ One line of context (with a link if relevant).
 ```
 
 - **Headline first**, bold, one line, optionally a status emoji (⚠️ 🚨 ✅ 🎉).
-- **One line of context**: what happened or why it matters, with a link.
+  The tracking ticket, PR or doc, when there is one, and the people to tag (by
+  the thread rule above) go on the headline line too, so the first line says
+  what it is and where it is tracked. If the headline already names the
+  tracking item, link that mention in place instead of adding it again.
+- **One line of context**: what happened or why it matters, with a link only
+  when it adds something the headline's link does not.
 - **Use focused bullets for separate details.** A short second sentence may
   qualify a claim in the same bullet.
 - **End on the last bullet by default.** A closing labeled line is optional;
