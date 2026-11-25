@@ -234,7 +234,7 @@ Slack uses **mrkdwn** (not Markdown). Key differences:
 priority over length and layout preferences. Apply the meaning check before conversion.**
 
 - **Choose the shape from the request.** A reply answers directly. A new thread
-  opens with `🧵 for <topic>:`; a standalone announcement uses its own shape.
+  opens with `🧵 for <topic>, <tracking link>: @tags`; a standalone announcement uses its own shape.
   Default to a new thread when the request gives no placement.
 - **Use bullets for separate points.** Keep a claim and its qualification
   together, even when that takes two short sentences. A simple reply does not
@@ -293,8 +293,9 @@ together, and let the meaning check take priority over their length targets.
 - Point 3
 ```
 
-- **`🧵 for <topic>:` on line one.** The thread emoji, then `for`, then the
-  topic, ending with a colon. No bold. Emit the literal 🧵 character rather than
+- **Line one, in this order:** the thread emoji, `for`, the topic, then the
+  tracking link after a comma if there is one, then a colon, then the tags.
+  No bold. Emit the literal 🧵 character rather than
   the `:thread:` shortcode, so it survives the copy-paste path as well as the
   API path. The topic is a short noun phrase naming what the thread is about,
   not a sentence: "🧵 for the failing nightly build:", never "🧵 for discussing
@@ -302,9 +303,11 @@ together, and let the meaning check take priority over their length targets.
 - **Put the tracking link on the topic line**, right after the topic: the one
   ticket, PR or doc the thread is about, so the first line says where the work
   is tracked. Only that one link; every other link goes in the points. Leave it
-  out when there is no single tracking item.
-- **Tag the people who must read it at the end of the topic line**, after the
-  colon, never on a line of their own. Use people the user named; do not block
+  out when there is no single tracking item. If the topic already names the
+  ticket, link that mention in place instead of adding the key a second time.
+- **Tag the people who must act, and anyone the user asks to tag, at the end
+  of the topic line**, after the colon, never on a line of their own. A tag
+  alone does not assign work. Use people the user named; do not block
   a draft to ask for optional tags. On the copy-paste path write them as plain `@Display Name`; see
   "Mentions" for why the user must re-type the `@` after pasting.
 - **Points go directly under it.** Use as few bullets as the points need, at
@@ -335,9 +338,12 @@ One line of context (with a link if relevant).
 ```
 
 - **Headline first**, bold, one line, optionally a status emoji (⚠️ 🚨 ✅ 🎉).
-  The tracking ticket, PR or doc and the people who must act go on the headline
-  line too, so the first line says what it is, where it is tracked and who acts.
-- **One line of context**: what happened or why it matters, with a link.
+  The tracking ticket, PR or doc, when there is one, and the people to tag (by
+  the thread rule above) go on the headline line too, so the first line says
+  what it is, where it is tracked and who acts. If the headline already names
+  the ticket, link that mention in place.
+- **One line of context**: what happened or why it matters, with a link only
+  when it adds something the headline's link does not.
 - **Use focused bullets for separate details.** A short second sentence may
   qualify a claim in the same bullet.
 - **End on the last bullet by default.** A closing labeled line is optional;
