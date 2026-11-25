@@ -286,7 +286,7 @@ together, and let the meaning check take priority over their length targets.
 ### Thread starter (default)
 
 ```markdown
-🧵 for <topic>: @Person @Person
+🧵 for <topic>, [ABC-123](url): @Person @Person
 
 - Point 1
 - Point 2
@@ -299,6 +299,10 @@ together, and let the meaning check take priority over their length targets.
   API path. The topic is a short noun phrase naming what the thread is about,
   not a sentence: "🧵 for the failing nightly build:", never "🧵 for discussing
   why the nightly build keeps failing".
+- **Put the tracking link on the topic line**, right after the topic: the one
+  ticket, PR or doc the thread is about, so the first line says where the work
+  is tracked. Only that one link; every other link goes in the points. Leave it
+  out when there is no single tracking item.
 - **Tag the people who must read it at the end of the topic line**, after the
   colon, never on a line of their own. Use people the user named; do not block
   a draft to ask for optional tags. On the copy-paste path write them as plain `@Display Name`; see
@@ -306,22 +310,22 @@ together, and let the meaning check take priority over their length targets.
 - **Points go directly under it.** Use as few bullets as the points need, at
   most five, and no context sentence in between. The topic line is the context, so repeating it wastes the
   reader's first line.
-- **Every artifact the reader needs to judge the thread gets a link**, in the
-  points: the ticket, and also the failing build, blocked PR, dashboard, or log
-  the thread is about. A reader should never have to ask "which PR?".
+- **Every artifact the reader needs to judge the thread gets a link**: the
+  tracking item on the topic line, and the failing build, blocked PR, dashboard,
+  or log in the points. A reader should never have to ask "which PR?".
   Use supplied or verified URLs. If an essential link is unavailable, ask for
   it or say it is missing; never invent a destination to fill the template.
   Omit an unverified supporting link when the supplied facts already make the
   message understandable and actionable.
-- **Links live inside the points**, never in the topic line. Keep the topic line
-  scannable in the channel sidebar.
+- **Keep the topic line scannable in the channel sidebar:** topic, tracking
+  link, tags, and nothing else.
 - **End on the last point by default.** A closing `**Ask:**`, `**Next:**` or
   `**Impact:**` line is optional. See "Closing lines" for when to add one.
 
 ### Standalone announcement (no thread)
 
 ```markdown
-**Bold headline** ⚠️
+**Bold headline** ⚠️ [ABC-123](url) @Person
 
 One line of context (with a link if relevant).
 
@@ -331,6 +335,8 @@ One line of context (with a link if relevant).
 ```
 
 - **Headline first**, bold, one line, optionally a status emoji (⚠️ 🚨 ✅ 🎉).
+  The tracking ticket, PR or doc and the people who must act go on the headline
+  line too, so the first line says what it is, where it is tracked and who acts.
 - **One line of context**: what happened or why it matters, with a link.
 - **Use focused bullets for separate details.** A short second sentence may
   qualify a claim in the same bullet.
