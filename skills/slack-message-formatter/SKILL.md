@@ -195,6 +195,12 @@ do not add a source link to every chat handoff.
 
 ## Sending via Webhook (API path)
 
+Check the destination from Step 1 before using `send`. The command creates a
+top-level post in the webhook's configured channel. Use it only for a new post
+when that channel is confirmed as the intended destination. For a thread reply,
+a DM, or an unconfirmed webhook channel, give the user the draft and its
+destination for manual posting. Include the thread link when available.
+
 If the user wants to send directly to Slack via webhook, show them the final
 Markdown first and wait for an explicit go in this conversation. `send` posts
 to a real channel at once and cannot be taken back from here. A request to
