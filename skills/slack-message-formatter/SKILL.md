@@ -31,7 +31,7 @@ Format messages for Slack with pixel-perfect accuracy. Converts Markdown to Slac
 
 Invoke the skill before drafting any message text. By default, even a one-line
 reply goes through the converter for paste-safe output. An explicit draft-only
-request skips conversion and delivery, as described in Step 3.
+request skips conversion and delivery, as described in Step 4.
 
 ## Workflow
 
@@ -41,7 +41,18 @@ Set `SLACK_FORMATTER_ROOT` to that absolute directory in each shell invocation.
 It is a shell variable you set, not an environment variable supplied by Codex or
 Claude Code. The user's current project need not contain the formatter repo.
 
-### Step 1: Generate content in Markdown
+### Step 1: Choose where the message goes
+
+Decide the placement before drafting, because a reply and a new thread take
+different shapes. Prefer a reply in the existing thread on the same topic over
+a new thread. When a Slack search or read tool is available, look for that
+thread by the ticket or PR it is about, the topic, or the people involved. If
+no thread fits, pick the channel where the related discussion or the reader's
+team already is, and start a new thread there. Use the placement the user gave
+when they gave one. If you cannot verify a placement, say so instead of
+guessing a thread or channel.
+
+### Step 2: Generate content in Markdown
 
 Always generate the message content in **standard Markdown**. This is your native format and you produce it reliably. Use all Markdown features freely, because the converter handles everything:
 
@@ -54,7 +65,7 @@ Always generate the message content in **standard Markdown**. This is your nativ
 - Nested lists, blockquotes, code blocks with language hints
 - Slack mentions: **only work via the API/webhook path.** See "Mentions" below.
 
-### Step 2: Check meaning before shortening
+### Step 3: Check meaning before shortening
 
 Read the draft as a recipient who has not followed the work. Keep it brief,
 but retain the words needed to interpret it correctly. If a reasonable reader
@@ -87,11 +98,11 @@ For a format-only request that requires the original wording, flag ambiguity
 separately rather than silently rewriting the message. Keep that wording free
 of added titles, wrappers or template blocks, regardless of the default shape.
 
-### Step 3: Convert and deliver
+### Step 4: Convert and deliver
 
 If the user asks for a draft only or explicitly skips conversion, return the
 draft and any separate wording concern. Do not run the converter, open a preview,
-send anything, or use the copy-page report in Step 4.
+send anything, or use the copy-page report in Step 5.
 
 Run the converter script to transform the Markdown:
 
@@ -123,10 +134,11 @@ To get the converted text itself, replace `preview` with `mrkdwn` for a Slack
 bot or webhook payload, or with `html` for a tool that needs HTML. Each reads
 the same input and prints the result without writing pages or opening a browser.
 
-### Step 4: Report to user
+### Step 5: Report to user
 
-Report only actions that succeeded. After opening a copy page, use its actual
-path in a message like:
+Report only actions that succeeded. Always say where to post: the thread link
+for a reply, or the channel for a new thread, so the user does not have to find
+it. After opening a copy page, use its actual path in a message like:
 ```
 ✅ Copy page opened in your browser.
    Select all (Cmd+A), copy (Cmd+C), then paste in Slack (Cmd+V).
@@ -235,7 +247,8 @@ priority over length and layout preferences. Apply the meaning check before conv
 
 - **Choose the shape from the request.** A reply answers directly. A new thread
   opens with a topic line (see "Thread starter"); a standalone announcement uses its own shape.
-  Default to a new thread when the request gives no placement.
+  Prefer a reply in an existing thread on the topic (see Step 1); start a new
+  thread only when none fits.
 - **Use bullets for separate points.** Keep a claim and its qualification
   together, even when that takes two short sentences. A simple reply does not
   need a headline or extra bullets to fill a template.
@@ -277,8 +290,8 @@ priority over length and layout preferences. Apply the meaning check before conv
 
 ## Default Message Structure
 
-Most Slack messages open a thread, so the thread starter below is the default
-shape. Use the standalone announcement shape only when the user says the message
+When Step 1 finds no thread to reply in, the thread starter below is the
+default shape. Use the standalone announcement shape only when the user says the message
 is a standalone post. For a reply, answer directly and use bullets only for
 separate points. These templates are defaults; keep a claim and its qualification
 together, and let the meaning check take priority over their length targets.
